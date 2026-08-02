@@ -77,8 +77,8 @@ function Splash({ onNext }: { onNext: () => void }) {
         </h1>
       </div>
 
-      {/* شمارش معکوس */}
-      <div className="flex gap-4 z-10 mt-2">
+     {/* شمارش معکوس */}
+      <div dir="rtl" className="flex gap-4 z-10 mt-2">
         <div className="text-center">
           <div className="font-extrabold leading-none" style={{ fontSize: '22px', color: '#e8cfa8' }}>
             {countdown.days}
