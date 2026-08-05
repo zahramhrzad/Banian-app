@@ -10,6 +10,7 @@ function VisitorDashboard({
   onOpenParticipants,
   onOpenPanels,
   onOpenMyAppointments,
+  onOpenNotifications,
 }: {
   name: string
   onOpenCard: () => void
@@ -17,6 +18,7 @@ function VisitorDashboard({
   onOpenParticipants: () => void
   onOpenPanels: () => void
   onOpenMyAppointments: () => void
+  onOpenNotifications: () => void
 }) {
   const [glowId, setGlowId] = useState<string | null>(null)
 
@@ -62,8 +64,9 @@ function VisitorDashboard({
         <img src={logo} alt="لوگوی بانیان" className="w-9 h-9 object-contain mx-auto mb-4" />
 
         <div className="flex justify-between items-center mb-4">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center relative"
+          <button
+            onClick={onOpenNotifications}
+            className="w-9 h-9 rounded-full flex items-center justify-center relative cursor-pointer"
             style={{ background: 'rgba(190,156,119,0.15)' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.8">
@@ -73,7 +76,7 @@ function VisitorDashboard({
               className="absolute rounded-full"
               style={{ width: '6px', height: '6px', top: '5px', right: '5px', background: '#e08b8b' }}
             ></div>
-          </div>
+          </button>
           <div>
             <div className="text-xs" style={{ color: '#9b9baf' }}>بازدیدکننده گرامی</div>
             <div className="text-base font-bold" style={{ color: '#be9c77' }}>{name || 'بازدیدکننده'}</div>
@@ -238,7 +241,7 @@ function VisitorDashboard({
           </svg>
           <div className="text-[8.5px] mt-0.5" style={{ color: '#9b9baf' }}>QR</div>
         </button>
-        <button onClick={() => goTo('اعلان‌ها')} className="text-center cursor-pointer">
+        <button onClick={onOpenNotifications} className="text-center cursor-pointer">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9b9baf" strokeWidth="2" className="mx-auto">
             <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
           </svg>

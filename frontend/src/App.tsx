@@ -11,6 +11,7 @@ import MapAccess from './MapAccess'
 import Participants from './Participants'
 import Panels from './Panels'
 import MyAppointments from './MyAppointments'
+import Notifications from './Notifications'
 
 type Step =
   | 'splash'
@@ -25,6 +26,7 @@ type Step =
   | 'participants'
   | 'panels'
   | 'myAppointments'
+  | 'notifications'
 
 function App() {
   const [step, setStep] = useState<Step>('splash')
@@ -32,8 +34,10 @@ function App() {
   const [mobile, setMobile] = useState('')
   const [priorityCategories, setPriorityCategories] = useState<string[]>([])
   const [visitGoals, setVisitGoals] = useState<string[]>([])
+  // مشخص می‌کند دکمه‌ی برگشت در صفحه‌ی کارت ورود، به کجا برود (به otp یا به dashboard)
+  const [cardOrigin, setCardOrigin] = useState<'otp' | 'dashboard'>('otp')
   void priorityCategories
-void visitGoals
+  void visitGoals
 
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
 
@@ -79,7 +83,16 @@ void visitGoals
   }
 
   if (step === 'otp') {
-    return <OtpVerify mobile={mobile} onVerify={() => setStep('card')} onBack={() => setStep('login')} />
+    return (
+      <OtpVerify
+        mobile={mobile}
+        onVerify={() => {
+          setCardOrigin('otp')
+          setStep('card')
+        }}
+        onBack={() => setStep('login')}
+      />
+    )
   }
 
   if (step === 'card') {
@@ -88,7 +101,7 @@ void visitGoals
         name={name}
         mobile={mobile}
         onContinue={() => setStep('dashboard')}
-        onBack={() => setStep('otp')}
+        onBack={() => setStep(cardOrigin)}
       />
     )
   }
@@ -97,11 +110,15 @@ void visitGoals
     return (
       <VisitorDashboard
         name={name}
-        onOpenCard={() => setStep('card')}
+        onOpenCard={() => {
+          setCardOrigin('dashboard')
+          setStep('card')
+        }}
         onOpenMap={() => setStep('map')}
         onOpenParticipants={() => setStep('participants')}
         onOpenPanels={() => setStep('panels')}
         onOpenMyAppointments={() => setStep('myAppointments')}
+        onOpenNotifications={() => setStep('notifications')}
       />
     )
   }
@@ -123,13 +140,17 @@ void visitGoals
     )
   }
 
-  return (
-    <MyAppointments
-      onBack={() => setStep('dashboard')}
-      onOpenParticipants={() => setStep('participants')}
-      onOpenPanels={() => setStep('panels')}
-    />
-  )
+  if (step === 'myAppointments') {
+    return (
+      <MyAppointments
+        onBack={() => setStep('dashboard')}
+        onOpenParticipants={() => setStep('participants')}
+        onOpenPanels={() => setStep('panels')}
+      />
+    )
+  }
+
+  return <Notifications onBack={() => setStep('dashboard')} />
 }
 
 export default App
