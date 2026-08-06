@@ -5,6 +5,7 @@ import VisitPriority from './VisitPriority'
 import VisitGoal from './VisitGoal'
 import MobileLogin from './MobileLogin'
 import OtpVerify from './OtpVerify'
+import Registration from './Registration'
 import EntryCard from './EntryCard'
 import VisitorDashboard from './VisitorDashboard'
 import MapAccess from './MapAccess'
@@ -20,6 +21,7 @@ type Step =
   | 'goal'
   | 'login'
   | 'otp'
+  | 'registration'
   | 'card'
   | 'dashboard'
   | 'map'
@@ -34,10 +36,12 @@ function App() {
   const [mobile, setMobile] = useState('')
   const [priorityCategories, setPriorityCategories] = useState<string[]>([])
   const [visitGoals, setVisitGoals] = useState<string[]>([])
-  // مشخص می‌کند دکمه‌ی برگشت در صفحه‌ی کارت ورود، به کجا برود (به otp یا به dashboard)
-  const [cardOrigin, setCardOrigin] = useState<'otp' | 'dashboard'>('otp')
+  const [registrationData, setRegistrationData] = useState<unknown>(null)
+  // مشخص می‌کند دکمه‌ی برگشت در صفحه‌ی کارت ورود، به کجا برود
+  const [cardOrigin, setCardOrigin] = useState<'registration' | 'dashboard'>('registration')
   void priorityCategories
   void visitGoals
+  void registrationData
 
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
 
@@ -86,11 +90,21 @@ function App() {
     return (
       <OtpVerify
         mobile={mobile}
-        onVerify={() => {
-          setCardOrigin('otp')
+        onVerify={() => setStep('registration')}
+        onBack={() => setStep('login')}
+      />
+    )
+  }
+
+  if (step === 'registration') {
+    return (
+      <Registration
+        onComplete={(regData) => {
+          setRegistrationData(regData)
+          setCardOrigin('registration')
           setStep('card')
         }}
-        onBack={() => setStep('login')}
+        onBack={() => setStep('otp')}
       />
     )
   }
