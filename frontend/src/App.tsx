@@ -6,7 +6,11 @@ import VisitGoal from './VisitGoal'
 import MobileLogin from './MobileLogin'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
-import EntryCard from './EntryCard'
+import TicketPurchase, { type TicketPurchaseResult } from './TicketPurchase'
+import PaymentGateway from './PaymentGateway'
+import TicketsIssued from './TicketsIssued'
+import MyTickets from './MyTickets'
+import type { Ticket } from './TicketCard'
 import VisitorDashboard from './VisitorDashboard'
 import MapAccess from './MapAccess'
 import Participants from './Participants'
@@ -22,13 +26,23 @@ type Step =
   | 'login'
   | 'otp'
   | 'registration'
-  | 'card'
+  | 'ticketPurchase'
+  | 'payment'
+  | 'ticketsIssued'
+  | 'myTickets'
   | 'dashboard'
   | 'map'
   | 'participants'
   | 'panels'
   | 'myAppointments'
   | 'notifications'
+
+let ticketIdCounter = 214
+
+function generateTicketId() {
+  ticketIdCounter += 1
+  return `#BN-${String(ticketIdCounter).padStart(5, '0')}`
+}
 
 function App() {
   const [step, setStep] = useState<Step>('splash')
@@ -37,8 +51,10 @@ function App() {
   const [priorityCategories, setPriorityCategories] = useState<string[]>([])
   const [visitGoals, setVisitGoals] = useState<string[]>([])
   const [registrationData, setRegistrationData] = useState<unknown>(null)
-  // مشخص می‌کند دکمه‌ی برگشت در صفحه‌ی کارت ورود، به کجا برود
-  const [cardOrigin, setCardOrigin] = useState<'registration' | 'dashboard'>('registration')
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [newlyIssuedTickets, setNewlyIssuedTickets] = useState<Ticket[]>([])
+  const [pendingTickets, setPendingTickets] = useState<TicketPurchaseResult[]>([])
+  const [pendingPrice, setPendingPrice] = useState(0)
   void priorityCategories
   void visitGoals
   void registrationData
@@ -101,21 +117,63 @@ function App() {
       <Registration
         onComplete={(regData) => {
           setRegistrationData(regData)
-          setCardOrigin('registration')
-          setStep('card')
+          setStep('ticketPurchase')
         }}
         onBack={() => setStep('otp')}
       />
     )
   }
 
-  if (step === 'card') {
+  if (step === 'ticketPurchase') {
     return (
-      <EntryCard
-        name={name}
-        mobile={mobile}
+      <TicketPurchase
+        buyerName={name}
+        onPaymentInitiate={(ticketResults, totalPrice) => {
+          setPendingTickets(ticketResults)
+          setPendingPrice(totalPrice)
+          setStep('payment')
+        }}
+        onBack={() => setStep('registration')}
+      />
+    )
+  }
+
+  if (step === 'payment') {
+    return (
+      <PaymentGateway
+        totalPrice={pendingPrice}
+        onBack={() => setStep('ticketPurchase')}
+        onSuccess={() => {
+          const issued: Ticket[] = pendingTickets.map((t) => ({
+            id: generateTicketId(),
+            ownerName: t.name,
+            date: t.date,
+            status: 'active',
+          }))
+          setNewlyIssuedTickets(issued)
+          setTickets((prev) => [...prev, ...issued])
+          setStep('ticketsIssued')
+        }}
+      />
+    )
+  }
+
+  if (step === 'ticketsIssued') {
+    return (
+      <TicketsIssued
+        tickets={newlyIssuedTickets}
         onContinue={() => setStep('dashboard')}
-        onBack={() => setStep(cardOrigin)}
+        onBack={() => setStep('payment')}
+      />
+    )
+  }
+
+  if (step === 'myTickets') {
+    return (
+      <MyTickets
+        tickets={tickets}
+        onBack={() => setStep('dashboard')}
+        onBuyNew={() => setStep('ticketPurchase')}
       />
     )
   }
@@ -124,10 +182,7 @@ function App() {
     return (
       <VisitorDashboard
         name={name}
-        onOpenCard={() => {
-          setCardOrigin('dashboard')
-          setStep('card')
-        }}
+        onOpenCard={() => setStep('myTickets')}
         onOpenMap={() => setStep('map')}
         onOpenParticipants={() => setStep('participants')}
         onOpenPanels={() => setStep('panels')}
