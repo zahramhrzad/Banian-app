@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import BackButton from './BackButton'
 
-const goals = [
+const visitorGoals = [
   { id: 'booths', label: 'بازدید از غرفه‌ها و خدمات' },
   { id: 'tools', label: 'آشنایی با ابزارهای مالی جدید' },
   { id: 'investment', label: 'آشنایی با فرصت‌های سرمایه‌گذاری' },
@@ -11,13 +11,26 @@ const goals = [
   { id: 'industry', label: 'کسب اطلاعات از صنعت' },
 ]
 
+const exhibitorGoals = [
+  { id: 'leads', label: 'جذب مشتری و سرنخ جدید (لید)' },
+  { id: 'products', label: 'معرفی محصولات و خدمات جدید' },
+  { id: 'networking', label: 'شبکه‌سازی با سایر شرکت‌ها و غرفه‌داران' },
+  { id: 'reunions', label: 'تجدید دیدار با مشتریان و شرکای فعلی' },
+  { id: 'hiring', label: 'جذب نیروی متخصص' },
+  { id: 'competitors', label: 'آشنایی با رقبا و روندهای بازار' },
+  { id: 'branding', label: 'تقویت برند و آگاهی‌بخشی' },
+]
+
 function VisitGoal({
+  userType,
   onContinue,
   onBack,
 }: {
+  userType: 'visitor' | 'exhibitor'
   onContinue: (selected: string[]) => void
   onBack: () => void
 }) {
+  const goals = userType === 'exhibitor' ? exhibitorGoals : visitorGoals
   const [selected, setSelected] = useState<string[]>([])
   const [hovered, setHovered] = useState<string | null>(null)
 

@@ -49,6 +49,7 @@ function generateTicketId() {
 
 function App() {
   const [step, setStep] = useState<Step>('splash')
+  const [userType, setUserType] = useState<'visitor' | 'exhibitor'>('visitor')
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
   const [priorityCategories, setPriorityCategories] = useState<string[]>([])
@@ -79,12 +80,21 @@ function App() {
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
 
   if (step === 'select') {
-    return <UserTypeSelect onSelect={() => setStep('priority')} onBack={() => setStep('splash')} />
+    return (
+      <UserTypeSelect
+        onSelect={(type) => {
+          setUserType(type)
+          setStep('priority')
+        }}
+        onBack={() => setStep('splash')}
+      />
+    )
   }
 
   if (step === 'priority') {
     return (
       <VisitPriority
+        userType={userType}
         onContinue={(selectedCategories) => {
           setPriorityCategories(selectedCategories)
           setStep('goal')
@@ -97,6 +107,7 @@ function App() {
   if (step === 'goal') {
     return (
       <VisitGoal
+        userType={userType}
         onContinue={(selectedGoals) => {
           setVisitGoals(selectedGoals)
           setStep('login')
