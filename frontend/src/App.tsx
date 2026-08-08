@@ -4,6 +4,7 @@ import UserTypeSelect from './UserTypeSelect'
 import VisitPriority from './VisitPriority'
 import VisitGoal from './VisitGoal'
 import MobileLogin from './MobileLogin'
+import ExhibitorLogin from './ExhibitorLogin'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
 import TicketPurchase, { type TicketPurchaseResult } from './TicketPurchase'
@@ -19,6 +20,7 @@ import MyAppointments from './MyAppointments'
 import Notifications from './Notifications'
 import Promotions from './Promotions'
 import { initialPromotions } from './Promotion'
+import BackButton from './BackButton'
 
 type Step =
   | 'splash'
@@ -33,6 +35,7 @@ type Step =
   | 'ticketsIssued'
   | 'myTickets'
   | 'dashboard'
+  | 'exhibitorHome'
   | 'map'
   | 'participants'
   | 'panels'
@@ -60,9 +63,12 @@ function App() {
   const [pendingTickets, setPendingTickets] = useState<TicketPurchaseResult[]>([])
   const [pendingPrice, setPendingPrice] = useState(0)
   const [savedPromotionIds, setSavedPromotionIds] = useState<Set<string>>(new Set())
+  const [exhibitorCode, setExhibitorCode] = useState('')
+  const [exhibitorCompany, setExhibitorCompany] = useState('')
   void priorityCategories
   void visitGoals
   void registrationData
+  void exhibitorCode
 
   const togglePromotionSave = (id: string) => {
     setSavedPromotionIds((prev) => {
@@ -118,6 +124,20 @@ function App() {
   }
 
   if (step === 'login') {
+    if (userType === 'exhibitor') {
+      return (
+        <ExhibitorLogin
+          onSubmit={(n, m, code, company) => {
+            setName(n)
+            setMobile(m)
+            setExhibitorCode(code)
+            setExhibitorCompany(company)
+            setStep('exhibitorHome')
+          }}
+          onBack={() => setStep('goal')}
+        />
+      )
+    }
     return (
       <MobileLogin
         onSubmit={(n, m) => {
@@ -222,6 +242,28 @@ function App() {
         onOpenPromotionCompany={openPromotionCompany}
         onOpenPromotions={() => setStep('promotions')}
       />
+    )
+  }
+
+  if (step === 'exhibitorHome') {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6"
+        style={{ backgroundColor: '#1b2134', fontFamily: 'var(--font-fa)' }}
+      >
+        <BackButton onClick={() => setStep('login')} />
+        <div className="z-10 text-center">
+          <div className="text-sm font-bold mb-2" style={{ color: '#be9c77' }}>
+            خوش‌آمدید {name}
+          </div>
+          <div className="text-xs mb-1" style={{ color: '#fff' }}>
+            غرفه‌ی {exhibitorCompany}
+          </div>
+          <div className="text-xs mt-4" style={{ color: '#9b9baf' }}>
+            داشبورد غرفه‌دار به‌زودی اینجا ساخته می‌شود
+          </div>
+        </div>
+      </div>
     )
   }
 
