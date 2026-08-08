@@ -58,10 +58,8 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
 
   const glowShadow = '0 0 6px 1px rgba(190,156,119,0.4)'
 
-  const fieldClass =
-    'flex items-center gap-2 bg-white rounded-xl px-3.5 py-3'
-  const inputClass =
-    'flex-1 border-none outline-none text-xs bg-transparent'
+  const fieldClass = 'flex items-center gap-2 bg-white rounded-xl px-3.5 py-3'
+  const inputClass = 'flex-1 border-none outline-none text-xs bg-transparent'
 
   return (
     <div
@@ -74,7 +72,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
         style={{ width: '400px', height: '400px', top: '-100px', left: '-100px', background: '#be9c77', opacity: 0.08, filter: 'blur(80px)' }}
       ></div>
 
-      {/* نشانگر مراحل */}
       <div dir="rtl" className="relative flex items-start justify-between mb-6 mt-6 z-10">
         {STEP_LABELS.map((label, i) => {
           const num = i + 1
@@ -109,7 +106,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
         })}
       </div>
 
-      {/* مرحله ۱ — کد دعوت */}
       {step === 1 && (
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="text-sm font-bold mb-1.5 text-center" style={{ color: '#be9c77' }}>
@@ -146,7 +142,7 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
           <div className="mt-auto">
             <button
               onClick={() => setStep(2)}
-              className="w-full rounded-full py-3 font-bold text-xs"
+              className="w-full rounded-full py-3 font-bold text-xs active:shadow-[0_0_10px_2px_rgba(190,156,119,0.6),0_0_26px_8px_rgba(190,156,119,0.35)]"
               style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
             >
               ادامه
@@ -164,7 +160,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
         </div>
       )}
 
-      {/* مرحله ۲ — مشخصات پایه */}
       {step === 2 && (
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="text-sm font-bold mb-4 text-center" style={{ color: '#be9c77' }}>
@@ -253,8 +248,7 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
             </button>
             <button
               onClick={() => step2Valid && setStep(3)}
-              disabled={!step2Valid}
-              className="flex-[2] rounded-full py-2.5 font-bold text-xs"
+              className="flex-[2] rounded-full py-2.5 font-bold text-xs active:shadow-[0_0_10px_2px_rgba(190,156,119,0.6),0_0_26px_8px_rgba(190,156,119,0.35)]"
               style={{
                 background: step2Valid ? '#be9c77' : '#6b6375',
                 color: '#1b2134',
@@ -268,7 +262,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
         </div>
       )}
 
-      {/* مرحله ۳ — فرصت شغلی */}
       {step === 3 && (
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="text-sm font-bold mb-1.5 text-center" style={{ color: '#be9c77' }}>
@@ -383,13 +376,8 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
             </button>
             <button
               onClick={() => setStep(4)}
-              className="flex-[2] rounded-full py-2.5 font-bold text-xs"
-              style={{
-                background: '#be9c77',
-                color: '#1b2134',
-                border: 'none',
-                cursor: 'pointer',
-              }}
+              className="flex-[2] rounded-full py-2.5 font-bold text-xs active:shadow-[0_0_10px_2px_rgba(190,156,119,0.6),0_0_26px_8px_rgba(190,156,119,0.35)]"
+              style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
             >
               ادامه
             </button>
@@ -397,7 +385,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
         </div>
       )}
 
-      {/* مرحله ۴ — مرور نهایی */}
       {step === 4 && (
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="text-sm font-bold mb-1.5 text-center" style={{ color: '#be9c77' }}>

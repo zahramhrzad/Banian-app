@@ -17,6 +17,8 @@ import Participants from './Participants'
 import Panels from './Panels'
 import MyAppointments from './MyAppointments'
 import Notifications from './Notifications'
+import Promotions from './Promotions'
+import { initialPromotions } from './Promotion'
 
 type Step =
   | 'splash'
@@ -36,6 +38,7 @@ type Step =
   | 'panels'
   | 'myAppointments'
   | 'notifications'
+  | 'promotions'
 
 let ticketIdCounter = 214
 
@@ -55,9 +58,23 @@ function App() {
   const [newlyIssuedTickets, setNewlyIssuedTickets] = useState<Ticket[]>([])
   const [pendingTickets, setPendingTickets] = useState<TicketPurchaseResult[]>([])
   const [pendingPrice, setPendingPrice] = useState(0)
+  const [savedPromotionIds, setSavedPromotionIds] = useState<Set<string>>(new Set())
   void priorityCategories
   void visitGoals
   void registrationData
+
+  const togglePromotionSave = (id: string) => {
+    setSavedPromotionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const openPromotionCompany = (company: string) => {
+    alert('رفتن به پروفایل «' + company + '» (این صفحه هنوز ساخته نشده)')
+  }
 
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
 
@@ -188,6 +205,11 @@ function App() {
         onOpenPanels={() => setStep('panels')}
         onOpenMyAppointments={() => setStep('myAppointments')}
         onOpenNotifications={() => setStep('notifications')}
+        promotions={initialPromotions}
+        savedPromotionIds={savedPromotionIds}
+        onTogglePromotionSave={togglePromotionSave}
+        onOpenPromotionCompany={openPromotionCompany}
+        onOpenPromotions={() => setStep('promotions')}
       />
     )
   }
@@ -215,6 +237,18 @@ function App() {
         onBack={() => setStep('dashboard')}
         onOpenParticipants={() => setStep('participants')}
         onOpenPanels={() => setStep('panels')}
+      />
+    )
+  }
+
+  if (step === 'promotions') {
+    return (
+      <Promotions
+        promotions={initialPromotions}
+        savedIds={savedPromotionIds}
+        onToggleSave={togglePromotionSave}
+        onOpenCompany={openPromotionCompany}
+        onBack={() => setStep('dashboard')}
       />
     )
   }

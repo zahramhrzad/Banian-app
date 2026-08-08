@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import logo from './assets/logo.png'
+import PromotionCarousel from './PromotionCarousel'
+import type { Promotion } from './Promotion'
 
 const glowShadow = '0 0 6px 1px rgba(190,156,119,0.4), 0 0 16px 4px rgba(190,156,119,0.25)'
 
@@ -11,6 +13,11 @@ function VisitorDashboard({
   onOpenPanels,
   onOpenMyAppointments,
   onOpenNotifications,
+  promotions,
+  savedPromotionIds,
+  onTogglePromotionSave,
+  onOpenPromotionCompany,
+  onOpenPromotions,
 }: {
   name: string
   onOpenCard: () => void
@@ -19,6 +26,11 @@ function VisitorDashboard({
   onOpenPanels: () => void
   onOpenMyAppointments: () => void
   onOpenNotifications: () => void
+  promotions: Promotion[]
+  savedPromotionIds: Set<string>
+  onTogglePromotionSave: (id: string) => void
+  onOpenPromotionCompany: (company: string) => void
+  onOpenPromotions: () => void
 }) {
   const [glowId, setGlowId] = useState<string | null>(null)
 
@@ -82,6 +94,14 @@ function VisitorDashboard({
             <div className="text-base font-bold" style={{ color: '#be9c77' }}>{name || 'بازدیدکننده'}</div>
           </div>
         </div>
+
+        <PromotionCarousel
+          promotions={promotions}
+          savedIds={savedPromotionIds}
+          onToggleSave={onTogglePromotionSave}
+          onOpenCompany={onOpenPromotionCompany}
+          onViewAll={onOpenPromotions}
+        />
 
         <button
           onClick={onOpenCard}
