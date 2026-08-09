@@ -10,6 +10,9 @@ const DAYS = [
   { id: 4, label: 'روز چهارم', date: '۱۵ آذر' },
 ]
 
+// این لیست فقط برای تست فاز فعلیه؛ در فاز اتصال Supabase با کوئری واقعی از جدول companies (کدهای دعوت هر غرفه) جایگزین می‌شود
+const demoInviteCodes = ['BANIAN-2026', 'BANIAN-VIP2026']
+
 interface TicketDraft {
   id: number
   name: string
@@ -30,6 +33,9 @@ interface TicketPurchaseProps {
 export default function TicketPurchase({ buyerName, onPaymentInitiate, onBack }: TicketPurchaseProps) {
   const [drafts, setDrafts] = useState<TicketDraft[]>([{ id: 1, name: '', dayId: 1 }])
   const [nextId, setNextId] = useState(2)
+  const [inviteCode, setInviteCode] = useState('')
+  const [inviteApplied, setInviteApplied] = useState(false)
+  const [inviteError, setInviteError] = useState(false)
 
   const addTicket = () => {
     if (drafts.length >= 8) return
@@ -49,7 +55,29 @@ export default function TicketPurchase({ buyerName, onPaymentInitiate, onBack }:
     setDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, name } : d)))
   }
 
-  const totalPrice = TICKET_PRICE * drafts.length
+  const applyInviteCode = () => {
+    const code = inviteCode.trim().toUpperCase()
+    if (code === '') return
+    if (demoInviteCodes.includes(code)) {
+      setInviteApplied(true)
+      setInviteError(false)
+    } else {
+      setInviteApplied(false)
+      setInviteError(true)
+    }
+  }
+
+  const removeInviteCode = () => {
+    setInviteApplied(false)
+    setInviteError(false)
+    setInviteCode('')
+  }
+
+  const rawTotal = TICKET_PRICE * drafts.length
+  const discount = inviteApplied ? TICKET_PRICE : 0
+  const totalPrice = Math.max(rawTotal - discount, 0)
+  const isFree = totalPrice === 0
+
   const allValid = drafts.every((d, i) => i === 0 || d.name.trim() !== '')
 
   const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
@@ -87,6 +115,70 @@ export default function TicketPurchase({ buyerName, onPaymentInitiate, onBack }:
           هر بلیط فقط برای یک روز و یک‌بار ورود معتبر است
         </p>
 
+        <div className="bg-white rounded-2xl px-3.5 py-3 mb-3">
+          <div className="text-[11px] font-bold mb-2" style={{ color: '#1b2134' }}>
+            کد دعوت دارید؟ <span style={{ color: '#9b9baf', fontWeight: 400 }}>(اختیاری)</span>
+          </div>
+
+          {!inviteApplied ? (
+            <>
+              <div className="flex gap-1.5">
+                <input
+                  dir="ltr"
+                  value={inviteCode}
+                  onChange={(e) => {
+                    setInviteCode(e.target.value)
+                    if (inviteError) setInviteError(false)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') applyInviteCode()
+                  }}
+                  placeholder="مثال: BANIAN-2026"
+                  className="flex-1 rounded-lg px-2.5 py-2 text-[11px] outline-none"
+                  style={{ border: inviteError ? '1.5px solid #d9534f' : '1px solid #eee', color: '#1b2134' }}
+                />
+                <button
+                  onClick={applyInviteCode}
+                  disabled={inviteCode.trim() === ''}
+                  className="rounded-lg px-3 text-[10.5px] font-bold whitespace-nowrap"
+                  style={{
+                    background: inviteCode.trim() === '' ? '#e5e0da' : '#be9c77',
+                    color: '#1b2134',
+                    border: 'none',
+                    cursor: inviteCode.trim() === '' ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  اعمال کد
+                </button>
+              </div>
+              {inviteError && (
+                <div className="text-[9.5px] mt-1.5" style={{ color: '#d9534f' }}>
+                  کد دعوت نامعتبر است
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7d9a86" strokeWidth="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M9 12l2 2 4-4" />
+                </svg>
+                <span className="text-[10px]" style={{ color: '#7d9a86' }}>
+                  کد معتبر است — بلیط شما رایگان خواهد بود
+                </span>
+              </div>
+              <button
+                onClick={removeInviteCode}
+                className="text-[9.5px] underline"
+                style={{ color: '#9b9baf', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                حذف کد
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-col gap-2.5 mb-2">
           {drafts.map((d, idx) => (
             <div key={d.id} className="bg-white rounded-2xl px-3.5 py-3">
@@ -94,15 +186,25 @@ export default function TicketPurchase({ buyerName, onPaymentInitiate, onBack }:
                 <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>
                   بلیط {toFa(idx + 1)}
                 </span>
-                {drafts.length > 1 && (
-                  <button
-                    onClick={() => removeTicket(d.id)}
-                    className="text-[9px]"
-                    style={{ color: '#c76b5f', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    حذف
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {idx === 0 && inviteApplied && (
+                    <span
+                      className="text-[9px] font-bold px-2 py-0.5 rounded-md"
+                      style={{ background: '#e3f0e0', color: '#3f6b4d' }}
+                    >
+                      رایگان
+                    </span>
+                  )}
+                  {drafts.length > 1 && (
+                    <button
+                      onClick={() => removeTicket(d.id)}
+                      className="text-[9px]"
+                      style={{ color: '#c76b5f', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      حذف
+                    </button>
+                  )}
+                </div>
               </div>
               {idx > 0 && (
                 <input
@@ -148,15 +250,27 @@ export default function TicketPurchase({ buyerName, onPaymentInitiate, onBack }:
         </button>
 
         <div
-          className="flex justify-between items-center mb-4 pt-3.5"
+          className="flex flex-col gap-1.5 mb-4 pt-3.5"
           style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
         >
-          <span className="text-[11px]" style={{ color: '#9b9baf' }}>
-            مبلغ قابل پرداخت ({toFa(drafts.length)} بلیط)
-          </span>
-          <span className="text-[15px] font-extrabold" style={{ color: '#be9c77' }}>
-            {formatPrice(totalPrice)} تومان
-          </span>
+          {inviteApplied && (
+            <div className="flex justify-between items-center">
+              <span className="text-[10px]" style={{ color: '#7d9a86' }}>
+                تخفیف کد دعوت
+              </span>
+              <span className="text-[11px] font-bold" style={{ color: '#7d9a86' }}>
+                - {formatPrice(discount)} تومان
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between items-center">
+            <span className="text-[11px]" style={{ color: '#9b9baf' }}>
+              مبلغ قابل پرداخت ({toFa(drafts.length)} بلیط)
+            </span>
+            <span className="text-[15px] font-extrabold" style={{ color: '#be9c77' }}>
+              {formatPrice(totalPrice)} تومان
+            </span>
+          </div>
         </div>
 
         <button
@@ -170,11 +284,17 @@ export default function TicketPurchase({ buyerName, onPaymentInitiate, onBack }:
             cursor: allValid ? 'pointer' : 'not-allowed',
           }}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1b2134" strokeWidth="2">
-            <rect x="2" y="5" width="20" height="14" rx="2" />
-            <path d="M2 10h20" />
-          </svg>
-          پرداخت با زرین‌پال
+          {isFree ? (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1b2134" strokeWidth="2">
+              <path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
+            </svg>
+          ) : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1b2134" strokeWidth="2">
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <path d="M2 10h20" />
+            </svg>
+          )}
+          {isFree ? 'دریافت بلیط رایگان' : 'پرداخت با زرین‌پال'}
         </button>
       </div>
     </div>

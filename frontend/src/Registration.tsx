@@ -4,7 +4,6 @@ import BackButton from './BackButton'
 type Gender = 'مرد' | 'زن' | ''
 
 interface RegistrationData {
-  inviteCode: string
   fullName: string
   age: string
   gender: Gender
@@ -18,7 +17,6 @@ interface RegistrationData {
 }
 
 const emptyData: RegistrationData = {
-  inviteCode: '',
   fullName: '',
   age: '',
   gender: '',
@@ -31,7 +29,7 @@ const emptyData: RegistrationData = {
   skills: '',
 }
 
-const STEP_LABELS = ['کد دعوت', 'مشخصات', 'فرصت شغلی', 'تایید نهایی']
+const STEP_LABELS = ['مشخصات', 'فرصت شغلی', 'تایید نهایی']
 
 interface RegistrationProps {
   onComplete: (data: RegistrationData) => void
@@ -45,7 +43,7 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
 
   const update = (patch: Partial<RegistrationData>) => setData((prev) => ({ ...prev, ...patch }))
 
-  const step2Valid = data.fullName.trim() !== '' && data.age.trim() !== '' && data.gender !== ''
+  const basicInfoValid = data.fullName.trim() !== '' && data.age.trim() !== '' && data.gender !== ''
   const canComplete = agreed
 
   const goBackFromFirstStep = () => {
@@ -107,60 +105,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
       </div>
 
       {step === 1 && (
-        <div className="relative z-10 flex-1 flex flex-col">
-          <div className="text-sm font-bold mb-1.5 text-center" style={{ color: '#be9c77' }}>
-            کد دعوت دارید؟
-          </div>
-          <p className="text-[10.5px] mb-5 text-center" style={{ color: '#9b9baf' }}>
-            اگر از یکی از غرفه‌داران کد دریافت کرده‌اید وارد کنید
-          </p>
-
-          <div className={fieldClass + ' mb-2'}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.8">
-              <rect x="3" y="7" width="18" height="12" rx="2" />
-              <path d="M3 9l9 6 9-6" />
-            </svg>
-            <input
-              dir="ltr"
-              value={data.inviteCode}
-              onChange={(e) => update({ inviteCode: e.target.value })}
-              placeholder="مثال: BANIAN-2026"
-              className={inputClass}
-              style={{ color: '#1b2134' }}
-            />
-          </div>
-          <div className="flex items-center gap-1.5 mb-6 px-0.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d9a86" strokeWidth="2">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M9 12l2 2 4-4" />
-            </svg>
-            <span className="text-[9.5px]" style={{ color: '#7d9a86' }}>
-              با کد معتبر، ورود شما رایگان خواهد بود
-            </span>
-          </div>
-
-          <div className="mt-auto">
-            <button
-              onClick={() => setStep(2)}
-              className="w-full rounded-full py-3 font-bold text-xs active:shadow-[0_0_10px_2px_rgba(190,156,119,0.6),0_0_26px_8px_rgba(190,156,119,0.35)]"
-              style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
-            >
-              ادامه
-            </button>
-            <div className="text-center mt-3">
-              <button
-                onClick={() => setStep(2)}
-                className="text-[10px] underline"
-                style={{ color: '#9b9baf', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                کد دعوت ندارم
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {step === 2 && (
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="text-sm font-bold mb-4 text-center" style={{ color: '#be9c77' }}>
             مشخصات پایه
@@ -238,22 +182,16 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
             </div>
           </div>
 
-          <div className="mt-auto pt-6 flex gap-2">
+          <div className="mt-auto pt-6">
             <button
-              onClick={() => setStep(1)}
-              className="flex-1 rounded-full py-2.5 font-bold text-[11.5px]"
-              style={{ background: 'rgba(255,255,255,0.1)', color: '#e8cfa8', border: 'none', cursor: 'pointer' }}
-            >
-              بازگشت
-            </button>
-            <button
-              onClick={() => step2Valid && setStep(3)}
-              className="flex-[2] rounded-full py-2.5 font-bold text-xs active:shadow-[0_0_10px_2px_rgba(190,156,119,0.6),0_0_26px_8px_rgba(190,156,119,0.35)]"
+              onClick={() => basicInfoValid && setStep(2)}
+              disabled={!basicInfoValid}
+              className="w-full rounded-full py-3 font-bold text-xs active:shadow-[0_0_10px_2px_rgba(190,156,119,0.6),0_0_26px_8px_rgba(190,156,119,0.35)]"
               style={{
-                background: step2Valid ? '#be9c77' : '#6b6375',
+                background: basicInfoValid ? '#be9c77' : '#6b6375',
                 color: '#1b2134',
                 border: 'none',
-                cursor: step2Valid ? 'pointer' : 'not-allowed',
+                cursor: basicInfoValid ? 'pointer' : 'not-allowed',
               }}
             >
               ادامه
@@ -262,7 +200,7 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
         </div>
       )}
 
-      {step === 3 && (
+      {step === 2 && (
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="text-sm font-bold mb-1.5 text-center" style={{ color: '#be9c77' }}>
             فرصت‌های شغلی حوزه‌ی مالی
@@ -277,7 +215,7 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
               <path d="M8 11V8a4 4 0 018 0v3" />
             </svg>
             <span className="text-[9.5px] leading-relaxed" style={{ color: '#e8cfa8' }}>
-              این بخش صرفاً برای غرفه‌داران قابل مشاهده است
+              این بخش صرفاً برای خود شما قابل مشاهده است
             </span>
           </div>
 
@@ -368,14 +306,14 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
 
           <div className="mt-auto pt-4 flex gap-2">
             <button
-              onClick={() => setStep(2)}
+              onClick={() => setStep(1)}
               className="flex-1 rounded-full py-2.5 font-bold text-[11.5px]"
               style={{ background: 'rgba(255,255,255,0.1)', color: '#e8cfa8', border: 'none', cursor: 'pointer' }}
             >
               بازگشت
             </button>
             <button
-              onClick={() => setStep(4)}
+              onClick={() => setStep(3)}
               className="flex-[2] rounded-full py-2.5 font-bold text-xs active:shadow-[0_0_10px_2px_rgba(190,156,119,0.6),0_0_26px_8px_rgba(190,156,119,0.35)]"
               style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
             >
@@ -385,7 +323,7 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
         </div>
       )}
 
-      {step === 4 && (
+      {step === 3 && (
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="text-sm font-bold mb-1.5 text-center" style={{ color: '#be9c77' }}>
             مرور اطلاعات
@@ -395,7 +333,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
           </p>
 
           <div className="bg-white rounded-2xl overflow-hidden mb-4">
-            <ReviewRow label="کد دعوت" value={data.inviteCode || 'وارد نشده'} />
             <ReviewRow label="نام" value={data.fullName || '—'} />
             <ReviewRow label="سن / جنسیت" value={`${data.age || '—'} / ${data.gender || '—'}`} />
             <ReviewRow label="شغل" value={`${data.jobTitle || '—'}${data.company ? ' - ' + data.company : ''}`} />
@@ -420,7 +357,7 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
 
           <div className="mt-auto flex gap-2">
             <button
-              onClick={() => setStep(3)}
+              onClick={() => setStep(2)}
               className="flex-1 rounded-full py-3 font-bold text-[11.5px]"
               style={{ background: 'rgba(255,255,255,0.1)', color: '#e8cfa8', border: 'none', cursor: 'pointer' }}
             >
@@ -445,7 +382,6 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
     </div>
   )
 }
-
 function ReviewRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
     <div

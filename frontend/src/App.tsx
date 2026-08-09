@@ -177,6 +177,18 @@ function App() {
       <TicketPurchase
         buyerName={name}
         onPaymentInitiate={(ticketResults, totalPrice) => {
+          if (totalPrice === 0) {
+            const issued: Ticket[] = ticketResults.map((t) => ({
+              id: generateTicketId(),
+              ownerName: t.name,
+              date: t.date,
+              status: 'active',
+            }))
+            setNewlyIssuedTickets(issued)
+            setTickets((prev) => [...prev, ...issued])
+            setStep('ticketsIssued')
+            return
+          }
           setPendingTickets(ticketResults)
           setPendingPrice(totalPrice)
           setStep('payment')
@@ -185,7 +197,6 @@ function App() {
       />
     )
   }
-
   if (step === 'payment') {
     return (
       <PaymentGateway
