@@ -6,6 +6,8 @@ import VisitGoal from './VisitGoal'
 import MobileLogin from './MobileLogin'
 import ExhibitorLogin from './ExhibitorLogin'
 import ExhibitorProducts from './ExhibitorProducts'
+import ExhibitorPanels from './ExhibitorPanels'
+import ExhibitorAgreements from './ExhibitorAgreements'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
 import TicketPurchase, { type TicketPurchaseResult } from './TicketPurchase'
@@ -38,6 +40,8 @@ type Step =
   | 'dashboard'
   | 'exhibitorHome'
   | 'exhibitorProducts'
+  | 'exhibitorPanels'
+  | 'exhibitorAgreements'
   | 'map'
   | 'participants'
   | 'panels'
@@ -273,13 +277,29 @@ function App() {
           <div className="text-xs mb-6" style={{ color: '#9b9baf' }}>
             بقیه‌ی داشبورد غرفه‌دار به‌زودی اینجا ساخته می‌شود
           </div>
-          <button
-            onClick={() => setStep('exhibitorProducts')}
-            className="w-full rounded-xl py-3.5 font-bold text-xs"
-            style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
-          >
-            مدیریت محصولات و رونمایی‌ها
-          </button>
+          <div className="flex flex-col gap-2.5">
+            <button
+              onClick={() => setStep('exhibitorProducts')}
+              className="w-full rounded-xl py-3.5 font-bold text-xs"
+              style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
+            >
+              مدیریت محصولات و رونمایی‌ها
+            </button>
+            <button
+              onClick={() => setStep('exhibitorPanels')}
+              className="w-full rounded-xl py-3.5 font-bold text-xs"
+              style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
+            >
+              پنل‌ها و همایش‌های غرفه
+            </button>
+            <button
+              onClick={() => setStep('exhibitorAgreements')}
+              className="w-full rounded-xl py-3.5 font-bold text-xs"
+              style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
+            >
+              قراردادها و تفاهم‌نامه‌ها
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -287,6 +307,14 @@ function App() {
 
   if (step === 'exhibitorProducts') {
     return <ExhibitorProducts onBack={() => setStep('exhibitorHome')} />
+  }
+
+  if (step === 'exhibitorPanels') {
+    return <ExhibitorPanels onBack={() => setStep('exhibitorHome')} />
+  }
+
+  if (step === 'exhibitorAgreements') {
+    return <ExhibitorAgreements onBack={() => setStep('exhibitorHome')} />
   }
 
   if (step === 'map') {
