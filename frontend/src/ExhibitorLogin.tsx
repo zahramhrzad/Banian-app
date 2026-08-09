@@ -7,6 +7,7 @@ const demoExhibitorCodes: Record<string, string> = {
   'EXH-1000': 'بانک آینده',
   'EXH-2000': 'کارگزاری آگاه',
   'EXH-3000': 'بیمه‌ی البرز',
+  '12345': 'غرفه‌ی نمونه',
 }
 
 const NAME_STORAGE_KEY = 'banian_exhibitor_name'

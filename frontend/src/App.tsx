@@ -5,6 +5,7 @@ import VisitPriority from './VisitPriority'
 import VisitGoal from './VisitGoal'
 import MobileLogin from './MobileLogin'
 import ExhibitorLogin from './ExhibitorLogin'
+import ExhibitorProducts from './ExhibitorProducts'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
 import TicketPurchase, { type TicketPurchaseResult } from './TicketPurchase'
@@ -36,6 +37,7 @@ type Step =
   | 'myTickets'
   | 'dashboard'
   | 'exhibitorHome'
+  | 'exhibitorProducts'
   | 'map'
   | 'participants'
   | 'panels'
@@ -197,6 +199,7 @@ function App() {
       />
     )
   }
+
   if (step === 'payment') {
     return (
       <PaymentGateway
@@ -263,19 +266,27 @@ function App() {
         style={{ backgroundColor: '#1b2134', fontFamily: 'var(--font-fa)' }}
       >
         <BackButton onClick={() => setStep('login')} />
-        <div className="z-10 text-center">
+        <div className="z-10 text-center w-full max-w-sm">
           <div className="text-sm font-bold mb-2" style={{ color: '#be9c77' }}>
-            خوش‌آمدید {name}
-          </div>
-          <div className="text-xs mb-1" style={{ color: '#fff' }}>
             غرفه‌ی {exhibitorCompany}
           </div>
-          <div className="text-xs mt-4" style={{ color: '#9b9baf' }}>
-            داشبورد غرفه‌دار به‌زودی اینجا ساخته می‌شود
+          <div className="text-xs mb-6" style={{ color: '#9b9baf' }}>
+            بقیه‌ی داشبورد غرفه‌دار به‌زودی اینجا ساخته می‌شود
           </div>
+          <button
+            onClick={() => setStep('exhibitorProducts')}
+            className="w-full rounded-xl py-3.5 font-bold text-xs"
+            style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
+          >
+            مدیریت محصولات و رونمایی‌ها
+          </button>
         </div>
       </div>
     )
+  }
+
+  if (step === 'exhibitorProducts') {
+    return <ExhibitorProducts onBack={() => setStep('exhibitorHome')} />
   }
 
   if (step === 'map') {
