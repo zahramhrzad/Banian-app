@@ -237,7 +237,10 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
               بله، مایلم
             </button>
             <button
-              onClick={() => update({ wantsJob: false })}
+              onClick={() => {
+                update({ wantsJob: false })
+                setStep(3)
+              }}
               className="flex-1 rounded-xl py-2.5 text-xs font-bold"
               style={{
                 background: '#fff',
