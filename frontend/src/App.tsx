@@ -5,9 +5,13 @@ import VisitPriority from './VisitPriority'
 import VisitGoal from './VisitGoal'
 import MobileLogin from './MobileLogin'
 import ExhibitorLogin from './ExhibitorLogin'
-import ExhibitorProducts from './ExhibitorProducts'
-import ExhibitorPanels from './ExhibitorPanels'
-import ExhibitorAgreements from './ExhibitorAgreements'
+import ExhibitorProducts, { type Product } from './ExhibitorProducts'
+import ExhibitorPanels, { type PanelSession } from './ExhibitorPanels'
+import ExhibitorAgreements, { type Agreement } from './ExhibitorAgreements'
+import ExhibitorPromotions, { type ExhibitorPromotion } from './ExhibitorPromotions'
+import ExhibitorInvites, { type SentInvite } from './ExhibitorInvites'
+import ExhibitorAppointments, { type MeetingRequest } from './ExhibitorAppointments'
+import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
 import TicketPurchase, { type TicketPurchaseResult } from './TicketPurchase'
@@ -23,7 +27,6 @@ import MyAppointments from './MyAppointments'
 import Notifications from './Notifications'
 import Promotions from './Promotions'
 import { initialPromotions } from './Promotion'
-import BackButton from './BackButton'
 
 type Step =
   | 'splash'
@@ -42,6 +45,9 @@ type Step =
   | 'exhibitorProducts'
   | 'exhibitorPanels'
   | 'exhibitorAgreements'
+  | 'exhibitorPromotions'
+  | 'exhibitorInvites'
+  | 'exhibitorAppointments'
   | 'map'
   | 'participants'
   | 'panels'
@@ -55,6 +61,31 @@ function generateTicketId() {
   ticketIdCounter += 1
   return `#BN-${String(ticketIdCounter).padStart(5, '0')}`
 }
+
+const initialMeetingRequests: MeetingRequest[] = [
+  {
+    id: 'mr1',
+    visitorName: 'سارا احمدی',
+    visitorCategory: 'insurance',
+    description: 'می‌خوام درباره‌ی همکاری در حوزه‌ی بیمه‌های دیجیتال صحبت کنیم',
+    visitorPhone: '0912xxxxxxx',
+    status: 'pending',
+    agreementNotes: '',
+    approvedByStaffName: '',
+    approvedAt: null,
+  },
+  {
+    id: 'mr2',
+    visitorName: 'علی رضایی',
+    visitorCategory: 'capital',
+    description: 'علاقه‌مند به فرصت‌های سرمایه‌گذاری مشترک هستم',
+    visitorPhone: '0935xxxxxxx',
+    status: 'pending',
+    agreementNotes: '',
+    approvedByStaffName: '',
+    approvedAt: null,
+  },
+]
 
 function App() {
   const [step, setStep] = useState<Step>('splash')
@@ -71,7 +102,13 @@ function App() {
   const [savedPromotionIds, setSavedPromotionIds] = useState<Set<string>>(new Set())
   const [exhibitorCode, setExhibitorCode] = useState('')
   const [exhibitorCompany, setExhibitorCompany] = useState('')
-  void priorityCategories
+  const [products, setProducts] = useState<Product[]>([])
+  const [panels, setPanels] = useState<PanelSession[]>([])
+  const [agreements, setAgreements] = useState<Agreement[]>([])
+  const [exhibitorPromotions, setExhibitorPromotions] = useState<ExhibitorPromotion[]>([])
+  const [inviteQuota, setInviteQuota] = useState(1000)
+  const [sentInvites, setSentInvites] = useState<SentInvite[]>([])
+  const [meetingRequests, setMeetingRequests] = useState<MeetingRequest[]>(initialMeetingRequests)
   void visitGoals
   void registrationData
   void exhibitorCode
@@ -87,6 +124,14 @@ function App() {
 
   const openPromotionCompany = (company: string) => {
     alert('رفتن به پروفایل «' + company + '» (این صفحه هنوز ساخته نشده)')
+  }
+
+  const handleExhibitorLogout = () => {
+    setName('')
+    setMobile('')
+    setExhibitorCode('')
+    setExhibitorCompany('')
+    setStep('login')
   }
 
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
@@ -265,56 +310,89 @@ function App() {
 
   if (step === 'exhibitorHome') {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6"
-        style={{ backgroundColor: '#1b2134', fontFamily: 'var(--font-fa)' }}
-      >
-        <BackButton onClick={() => setStep('login')} />
-        <div className="z-10 text-center w-full max-w-sm">
-          <div className="text-sm font-bold mb-2" style={{ color: '#be9c77' }}>
-            غرفه‌ی {exhibitorCompany}
-          </div>
-          <div className="text-xs mb-6" style={{ color: '#9b9baf' }}>
-            بقیه‌ی داشبورد غرفه‌دار به‌زودی اینجا ساخته می‌شود
-          </div>
-          <div className="flex flex-col gap-2.5">
-            <button
-              onClick={() => setStep('exhibitorProducts')}
-              className="w-full rounded-xl py-3.5 font-bold text-xs"
-              style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
-            >
-              مدیریت محصولات و رونمایی‌ها
-            </button>
-            <button
-              onClick={() => setStep('exhibitorPanels')}
-              className="w-full rounded-xl py-3.5 font-bold text-xs"
-              style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
-            >
-              پنل‌ها و همایش‌های غرفه
-            </button>
-            <button
-              onClick={() => setStep('exhibitorAgreements')}
-              className="w-full rounded-xl py-3.5 font-bold text-xs"
-              style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
-            >
-              قراردادها و تفاهم‌نامه‌ها
-            </button>
-          </div>
-        </div>
-      </div>
+      <ExhibitorDashboard
+        companyName={exhibitorCompany}
+        activityCategory={priorityCategories[0] || ''}
+        products={products}
+        panels={panels}
+        agreements={agreements}
+        promotions={exhibitorPromotions}
+        inviteQuota={inviteQuota}
+        sentInvites={sentInvites}
+        meetingRequests={meetingRequests}
+        onOpenProducts={() => setStep('exhibitorProducts')}
+        onOpenPanels={() => setStep('exhibitorPanels')}
+        onOpenAgreements={() => setStep('exhibitorAgreements')}
+        onOpenPromotions={() => setStep('exhibitorPromotions')}
+        onOpenInvites={() => setStep('exhibitorInvites')}
+        onOpenAppointments={() => setStep('exhibitorAppointments')}
+        onLogout={handleExhibitorLogout}
+      />
     )
   }
 
   if (step === 'exhibitorProducts') {
-    return <ExhibitorProducts onBack={() => setStep('exhibitorHome')} />
+    return (
+      <ExhibitorProducts
+        products={products}
+        setProducts={setProducts}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
   }
 
   if (step === 'exhibitorPanels') {
-    return <ExhibitorPanels onBack={() => setStep('exhibitorHome')} />
+    return (
+      <ExhibitorPanels
+        sessions={panels}
+        setSessions={setPanels}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
   }
 
   if (step === 'exhibitorAgreements') {
-    return <ExhibitorAgreements onBack={() => setStep('exhibitorHome')} />
+    return (
+      <ExhibitorAgreements
+        agreements={agreements}
+        setAgreements={setAgreements}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorPromotions') {
+    return (
+      <ExhibitorPromotions
+        companyName={exhibitorCompany}
+        promotions={exhibitorPromotions}
+        setPromotions={setExhibitorPromotions}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorInvites') {
+    return (
+      <ExhibitorInvites
+        quota={inviteQuota}
+        setQuota={setInviteQuota}
+        sentInvites={sentInvites}
+        setSentInvites={setSentInvites}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorAppointments') {
+    return (
+      <ExhibitorAppointments
+        requests={meetingRequests}
+        setRequests={setMeetingRequests}
+        staffName={name}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
   }
 
   if (step === 'map') {

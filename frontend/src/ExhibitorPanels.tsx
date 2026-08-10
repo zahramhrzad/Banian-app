@@ -2,34 +2,33 @@ import { useState } from 'react'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 
-type CategoryId = 'bank' | 'capital' | 'insurance' | 'infra' | ''
+export type CategoryId = 'bank' | 'capital' | 'insurance' | 'infra' | ''
 
-const categories: { id: CategoryId; label: string; color: string; text: string }[] = [
+export const categories: { id: CategoryId; label: string; color: string; text: string }[] = [
   { id: 'bank', label: 'بانک، اعتبار و پرداخت', color: '#f3e8dc', text: '#8a6d4d' },
   { id: 'capital', label: 'بازار سرمایه و سرمایه‌گذاری', color: '#e3f0e0', text: '#3f6b4d' },
   { id: 'insurance', label: 'بیمه و مدیریت ریسک', color: '#dbe8f7', text: '#3d5a80' },
   { id: 'infra', label: 'زیرساخت، فناوری و نهادهای پشتیبان', color: '#eee2f2', text: '#6b4d80' },
 ]
 
-// تاریخ تقریبی میلادی هر روز نمایشگاه (۱۲ الی ۱۵ آذر ۱۴۰۵)، فقط برای محاسبه‌ی خودکار وضعیت «پیش رو / برگزار شده»
-const DAYS = [
+export const DAYS = [
   { id: 1, label: 'روز اول', date: '۱۲ آذر', realDate: new Date(2026, 11, 3) },
   { id: 2, label: 'روز دوم', date: '۱۳ آذر', realDate: new Date(2026, 11, 4) },
   { id: 3, label: 'روز سوم', date: '۱۴ آذر', realDate: new Date(2026, 11, 5) },
   { id: 4, label: 'روز چهارم', date: '۱۵ آذر', realDate: new Date(2026, 11, 6) },
 ]
 
-function categoryInfo(id: CategoryId) {
+export function categoryInfo(id: CategoryId) {
   return categories.find((c) => c.id === id)
 }
 
-interface Speaker {
+export interface Speaker {
   id: string
   name: string
   role: string
 }
 
-interface PanelSession {
+export interface PanelSession {
   id: string
   title: string
   speakers: Speaker[]
@@ -58,14 +57,21 @@ const emptySession: Omit<PanelSession, 'id'> = {
   recordingLink: '',
 }
 
-function isPast(dayId: number) {
+export function isPast(dayId: number) {
   const day = DAYS.find((d) => d.id === dayId)
   if (!day) return false
   return Date.now() > day.realDate.getTime() + 24 * 60 * 60 * 1000
 }
 
-export default function ExhibitorPanels({ onBack }: { onBack: () => void }) {
-  const [sessions, setSessions] = useState<PanelSession[]>([])
+export default function ExhibitorPanels({
+  sessions,
+  setSessions,
+  onBack,
+}: {
+  sessions: PanelSession[]
+  setSessions: React.Dispatch<React.SetStateAction<PanelSession[]>>
+  onBack: () => void
+}) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<Omit<PanelSession, 'id'>>(emptySession)

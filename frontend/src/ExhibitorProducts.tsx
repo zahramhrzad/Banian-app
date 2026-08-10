@@ -2,9 +2,9 @@ import { useState } from 'react'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 
-type CategoryId = 'bank' | 'capital' | 'insurance' | 'infra'
+export type CategoryId = 'bank' | 'capital' | 'insurance' | 'infra'
 
-const categories: { id: CategoryId; label: string; color: string; text: string }[] = [
+export const categories: { id: CategoryId; label: string; color: string; text: string }[] = [
   { id: 'bank', label: 'بانک، اعتبار و پرداخت', color: '#f3e8dc', text: '#8a6d4d' },
   { id: 'capital', label: 'بازار سرمایه و سرمایه‌گذاری', color: '#e3f0e0', text: '#3f6b4d' },
   { id: 'insurance', label: 'بیمه و مدیریت ریسک', color: '#dbe8f7', text: '#3d5a80' },
@@ -12,9 +12,9 @@ const categories: { id: CategoryId; label: string; color: string; text: string }
 ]
 
 const DESCRIPTION_LIMIT = 150
-const NEW_LAUNCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000 // ۷ روز
+const NEW_LAUNCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
-interface Product {
+export interface Product {
   id: string
   name: string
   description: string
@@ -35,16 +35,23 @@ const emptyProduct: Omit<Product, 'id'> = {
   published: false,
 }
 
-function categoryInfo(id: CategoryId | '') {
+export function categoryInfo(id: CategoryId | '') {
   return categories.find((c) => c.id === id)
 }
 
-function isLaunchBadgeActive(p: Product) {
+export function isLaunchBadgeActive(p: Product) {
   return p.isNewLaunch && p.launchDate !== null && Date.now() - p.launchDate < NEW_LAUNCH_WINDOW_MS
 }
 
-export default function ExhibitorProducts({ onBack }: { onBack: () => void }) {
-  const [products, setProducts] = useState<Product[]>([])
+export default function ExhibitorProducts({
+  products,
+  setProducts,
+  onBack,
+}: {
+  products: Product[]
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>
+  onBack: () => void
+}) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<Omit<Product, 'id'>>(emptyProduct)
@@ -98,9 +105,7 @@ export default function ExhibitorProducts({ onBack }: { onBack: () => void }) {
   const saveProduct = () => {
     if (!isValid) return
     if (editingId) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === editingId ? { ...p, ...form } : p))
-      )
+      setProducts((prev) => prev.map((p) => (p.id === editingId ? { ...p, ...form } : p)))
     } else {
       setProducts((prev) => [...prev, { id: Date.now().toString(), ...form }])
     }

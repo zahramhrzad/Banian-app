@@ -2,18 +2,18 @@ import { useState } from 'react'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 
-type CategoryId = 'bank' | 'capital' | 'insurance' | 'infra' | ''
-type Status = 'negotiating' | 'signed' | 'cancelled'
+export type CategoryId = 'bank' | 'capital' | 'insurance' | 'infra' | ''
+export type Status = 'negotiating' | 'signed' | 'cancelled'
 type SortMode = 'newest' | 'status'
 
-const categories: { id: CategoryId; label: string; color: string; text: string }[] = [
+export const categories: { id: CategoryId; label: string; color: string; text: string }[] = [
   { id: 'bank', label: 'بانک، اعتبار و پرداخت', color: '#f3e8dc', text: '#8a6d4d' },
   { id: 'capital', label: 'بازار سرمایه و سرمایه‌گذاری', color: '#e3f0e0', text: '#3f6b4d' },
   { id: 'insurance', label: 'بیمه و مدیریت ریسک', color: '#dbe8f7', text: '#3d5a80' },
   { id: 'infra', label: 'زیرساخت، فناوری و نهادهای پشتیبان', color: '#eee2f2', text: '#6b4d80' },
 ]
 
-const statusInfo: Record<Status, { label: string; bg: string; text: string; order: number }> = {
+export const statusInfo: Record<Status, { label: string; bg: string; text: string; order: number }> = {
   negotiating: { label: 'در حال مذاکره', bg: 'rgba(190,156,119,0.18)', text: '#8a6d4d', order: 0 },
   signed: { label: 'امضا شده', bg: '#e3f0e0', text: '#3f6b4d', order: 1 },
   cancelled: { label: 'لغو شده', bg: 'rgba(217,83,79,0.12)', text: '#c76b5f', order: 2 },
@@ -23,7 +23,7 @@ function categoryInfo(id: CategoryId) {
   return categories.find((c) => c.id === id)
 }
 
-interface Agreement {
+export interface Agreement {
   id: string
   partnerName: string
   topic: string
@@ -51,8 +51,15 @@ const emptyAgreement: Omit<Agreement, 'id' | 'createdAt'> = {
   fileIsImage: false,
 }
 
-export default function ExhibitorAgreements({ onBack }: { onBack: () => void }) {
-  const [agreements, setAgreements] = useState<Agreement[]>([])
+export default function ExhibitorAgreements({
+  agreements,
+  setAgreements,
+  onBack,
+}: {
+  agreements: Agreement[]
+  setAgreements: React.Dispatch<React.SetStateAction<Agreement[]>>
+  onBack: () => void
+}) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<Omit<Agreement, 'id' | 'createdAt'>>(emptyAgreement)
@@ -120,6 +127,10 @@ export default function ExhibitorAgreements({ onBack }: { onBack: () => void }) 
 
   const deleteAgreement = (id: string) => {
     setAgreements((prev) => prev.filter((a) => a.id !== id))
+  }
+
+  const openFile = (url: string) => {
+    window.open(url, '_blank')
   }
 
   const sortedAgreements = [...agreements].sort((a, b) => {
@@ -209,15 +220,13 @@ export default function ExhibitorAgreements({ onBack }: { onBack: () => void }) 
                         {a.fileIsImage ? (
                           <img src={a.fileUrl} alt={a.fileName || ''} className="w-full rounded-lg" style={{ maxHeight: '100px', objectFit: 'cover' }} />
                         ) : (
-                          <a
-                            href={a.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            onClick={() => openFile(a.fileUrl as string)}
                             className="text-[9.5px] underline"
-                            style={{ color: '#3d5a80' }}
+                            style={{ color: '#3d5a80', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                           >
                             فایل: {a.fileName}
-                          </a>
+                          </button>
                         )}
                       </div>
                     )}
