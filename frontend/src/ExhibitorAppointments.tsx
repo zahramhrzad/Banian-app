@@ -391,9 +391,18 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
             </div>
             <div className="flex flex-col gap-2 mb-2">
               {declined.map((r) => (
-                <div key={r.id} className="bg-white rounded-xl px-3.5 py-2.5 flex items-center justify-between" style={{ opacity: 0.6 }}>
-                  <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
-                  <span className="text-[8px] font-bold" style={{ color: '#c76b5f' }}>رد شده</span>
+                <div key={r.id} className="bg-white rounded-xl px-3.5 py-2.5" style={{ opacity: 0.85 }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                    <span className="text-[8px] font-bold" style={{ color: '#c76b5f' }}>رد شده</span>
+                  </div>
+                  <button
+                    onClick={() => approve(r.id)}
+                    className="text-[9px] font-bold underline mt-1.5"
+                    style={{ color: '#3f6b4d', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    اشتباه رد شده؟ تایید کن
+                  </button>
                 </div>
               ))}
             </div>
