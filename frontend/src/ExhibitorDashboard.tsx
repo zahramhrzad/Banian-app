@@ -28,7 +28,6 @@ interface ExhibitorDashboardProps {
   meetingRequests: MeetingRequest[]
   onOpenProducts: () => void
   onOpenPanels: () => void
-  onOpenAgreements: () => void
   onOpenPromotions: () => void
   onOpenInvites: () => void
   onOpenAppointments: () => void
@@ -48,7 +47,6 @@ export default function ExhibitorDashboard({
   meetingRequests,
   onOpenProducts,
   onOpenPanels,
-  onOpenAgreements,
   onOpenPromotions,
   onOpenInvites,
   onOpenAppointments,
@@ -239,7 +237,7 @@ export default function ExhibitorDashboard({
           className="w-full rounded-2xl p-3 mb-3 flex items-center justify-between"
           style={{ ...groupCardStyle, cursor: 'pointer' }}
         >
-          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>درخواست‌های ملاقات</span>
+          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>قرارهای من</span>
           {pendingRequestsCount > 0 ? (
             <span
               className="text-[8px] font-bold px-2.5 py-1 rounded-full"
@@ -260,33 +258,40 @@ export default function ExhibitorDashboard({
           <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>گزارش نهایی غرفه</span>
         </button>
 
-        <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           <button
             onClick={onOpenProducts}
-            className="w-full rounded-xl py-3.5 font-bold text-xs"
+            className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex flex-col items-center justify-center gap-1"
             style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
           >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1b2134" strokeWidth="1.8">
+              <path d="M21 8L12 3 3 8l9 5 9-5z" />
+              <path d="M3 8v8l9 5 9-5V8" />
+              <path d="M12 13v8" />
+            </svg>
             محصولات
           </button>
           <button
             onClick={onOpenPanels}
-            className="w-full rounded-xl py-3.5 font-bold text-xs"
+            className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex flex-col items-center justify-center gap-1"
             style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
           >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <rect x="9" y="2" width="6" height="12" rx="3" />
+              <path d="M5 10v1a7 7 0 0014 0v-1M12 18v4M9 22h6" />
+            </svg>
             پنل‌ها
           </button>
           <button
-            onClick={onOpenAgreements}
-            className="w-full rounded-xl py-3.5 font-bold text-xs"
-            style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
-          >
-            قراردادها
-          </button>
-          <button
             onClick={onOpenPromotions}
-            className="w-full rounded-xl py-3.5 font-bold text-xs"
+            className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex flex-col items-center justify-center gap-1"
             style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
           >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <rect x="3" y="8" width="18" height="4" rx="1" />
+              <path d="M12 8v13M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+              <path d="M12 8c-1.5-3-5-4-5-1.5S9.5 8 12 8zM12 8c1.5-3 5-4 5-1.5S14.5 8 12 8z" />
+            </svg>
             پروموشن
           </button>
         </div>

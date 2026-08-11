@@ -323,7 +323,6 @@ function App() {
         meetingRequests={meetingRequests}
         onOpenProducts={() => setStep('exhibitorProducts')}
         onOpenPanels={() => setStep('exhibitorPanels')}
-        onOpenAgreements={() => setStep('exhibitorAgreements')}
         onOpenPromotions={() => setStep('exhibitorPromotions')}
         onOpenInvites={() => setStep('exhibitorInvites')}
         onOpenAppointments={() => setStep('exhibitorAppointments')}
@@ -393,6 +392,9 @@ function App() {
         setRequests={setMeetingRequests}
         staffName={name}
         staffPhone={mobile}
+        agreements={agreements}
+        setAgreements={setAgreements}
+        onOpenAgreements={() => setStep('exhibitorAgreements')}
         onBack={() => setStep('exhibitorHome')}
       />
     )
