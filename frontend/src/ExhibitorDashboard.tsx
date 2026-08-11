@@ -32,6 +32,7 @@ interface ExhibitorDashboardProps {
   onOpenPromotions: () => void
   onOpenInvites: () => void
   onOpenAppointments: () => void
+  onOpenReport: () => void
   onLogout: () => void
 }
 
@@ -51,6 +52,7 @@ export default function ExhibitorDashboard({
   onOpenPromotions,
   onOpenInvites,
   onOpenAppointments,
+  onOpenReport,
   onLogout,
 }: ExhibitorDashboardProps) {
   const cat = productCategoryInfo(activityCategory as CategoryId)
@@ -234,7 +236,7 @@ export default function ExhibitorDashboard({
 
         <button
           onClick={onOpenAppointments}
-          className="w-full rounded-2xl p-3 mb-4 flex items-center justify-between"
+          className="w-full rounded-2xl p-3 mb-3 flex items-center justify-between"
           style={{ ...groupCardStyle, cursor: 'pointer' }}
         >
           <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>درخواست‌های ملاقات</span>
@@ -248,6 +250,14 @@ export default function ExhibitorDashboard({
           ) : (
             <span className="text-[8px]" style={{ color: '#8b8a95' }}>مشاهده</span>
           )}
+        </button>
+
+        <button
+          onClick={onOpenReport}
+          className="w-full rounded-2xl p-3 mb-4 text-right"
+          style={{ ...groupCardStyle, cursor: 'pointer' }}
+        >
+          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>گزارش نهایی غرفه</span>
         </button>
 
         <div className="grid grid-cols-2 gap-2 mb-4">

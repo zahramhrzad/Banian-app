@@ -27,11 +27,13 @@ export default function ExhibitorAppointments({
   requests,
   setRequests,
   staffName,
+  staffPhone,
   onBack,
 }: {
   requests: MeetingRequest[]
   setRequests: React.Dispatch<React.SetStateAction<MeetingRequest[]>>
   staffName: string
+  staffPhone: string
   onBack: () => void
 }) {
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
@@ -162,9 +164,13 @@ export default function ExhibitorAppointments({
                       <span className="text-[8.5px]" style={{ color: '#9b9baf' }}>تلفن بازدیدکننده</span>
                       <span className="text-[8.5px] font-bold" dir="ltr" style={{ color: '#1b2134' }}>{r.visitorPhone}</span>
                     </div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-[8.5px]" style={{ color: '#9b9baf' }}>تاییدشده توسط</span>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[8.5px]" style={{ color: '#9b9baf' }}>تاییدشده توسط (غرفه)</span>
                       <span className="text-[8.5px] font-bold" style={{ color: '#1b2134' }}>{r.approvedByStaffName}</span>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-[8.5px]" style={{ color: '#9b9baf' }}>تلفن غرفه‌دار</span>
+                      <span className="text-[8.5px] font-bold" dir="ltr" style={{ color: '#1b2134' }}>{staffPhone}</span>
                     </div>
                     <textarea
                       value={noteDrafts[r.id] ?? r.agreementNotes}

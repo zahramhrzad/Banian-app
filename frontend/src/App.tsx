@@ -11,6 +11,7 @@ import ExhibitorAgreements, { type Agreement } from './ExhibitorAgreements'
 import ExhibitorPromotions, { type ExhibitorPromotion } from './ExhibitorPromotions'
 import ExhibitorInvites, { type SentInvite } from './ExhibitorInvites'
 import ExhibitorAppointments, { type MeetingRequest } from './ExhibitorAppointments'
+import ExhibitorReport from './ExhibitorReport'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -48,6 +49,7 @@ type Step =
   | 'exhibitorPromotions'
   | 'exhibitorInvites'
   | 'exhibitorAppointments'
+  | 'exhibitorReport'
   | 'map'
   | 'participants'
   | 'panels'
@@ -111,7 +113,6 @@ function App() {
   const [meetingRequests, setMeetingRequests] = useState<MeetingRequest[]>(initialMeetingRequests)
   void visitGoals
   void registrationData
-  void exhibitorCode
 
   const togglePromotionSave = (id: string) => {
     setSavedPromotionIds((prev) => {
@@ -326,6 +327,7 @@ function App() {
         onOpenPromotions={() => setStep('exhibitorPromotions')}
         onOpenInvites={() => setStep('exhibitorInvites')}
         onOpenAppointments={() => setStep('exhibitorAppointments')}
+        onOpenReport={() => setStep('exhibitorReport')}
         onLogout={handleExhibitorLogout}
       />
     )
@@ -390,6 +392,20 @@ function App() {
         requests={meetingRequests}
         setRequests={setMeetingRequests}
         staffName={name}
+        staffPhone={mobile}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorReport') {
+    return (
+      <ExhibitorReport
+        companyName={exhibitorCompany}
+        exhibitorCode={exhibitorCode}
+        staffPhone={mobile}
+        agreements={agreements}
+        meetingRequests={meetingRequests}
         onBack={() => setStep('exhibitorHome')}
       />
     )
