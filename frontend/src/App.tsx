@@ -12,6 +12,7 @@ import ExhibitorPromotions, { type ExhibitorPromotion } from './ExhibitorPromoti
 import ExhibitorInvites, { type SentInvite } from './ExhibitorInvites'
 import ExhibitorAppointments, { type MeetingRequest } from './ExhibitorAppointments'
 import ExhibitorReport from './ExhibitorReport'
+import ExhibitorScan, { type ScanLog } from './ExhibitorScan'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -50,6 +51,7 @@ type Step =
   | 'exhibitorInvites'
   | 'exhibitorAppointments'
   | 'exhibitorReport'
+  | 'exhibitorScan'
   | 'map'
   | 'participants'
   | 'panels'
@@ -111,6 +113,7 @@ function App() {
   const [inviteQuota, setInviteQuota] = useState(1000)
   const [sentInvites, setSentInvites] = useState<SentInvite[]>([])
   const [meetingRequests, setMeetingRequests] = useState<MeetingRequest[]>(initialMeetingRequests)
+  const [scanLogs, setScanLogs] = useState<ScanLog[]>([])
   void visitGoals
   void registrationData
 
@@ -327,7 +330,19 @@ function App() {
         onOpenInvites={() => setStep('exhibitorInvites')}
         onOpenAppointments={() => setStep('exhibitorAppointments')}
         onOpenReport={() => setStep('exhibitorReport')}
+        onOpenScan={() => setStep('exhibitorScan')}
         onLogout={handleExhibitorLogout}
+      />
+    )
+  }
+
+  if (step === 'exhibitorScan') {
+    return (
+      <ExhibitorScan
+        scanLogs={scanLogs}
+        setScanLogs={setScanLogs}
+        staffName={name}
+        onBack={() => setStep('exhibitorHome')}
       />
     )
   }
