@@ -49,10 +49,12 @@ function points(values: number[]) {
 export default function AdminDashboard({
   displayName,
   role,
+  onOpenRegistrants,
   onLogout,
 }: {
   displayName: string
   role: AdminRole
+  onOpenRegistrants: () => void
   onLogout: () => void
 }) {
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
@@ -169,7 +171,7 @@ export default function AdminDashboard({
               key={s.key}
               className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex items-center justify-center gap-1.5"
               style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
-              onClick={() => alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`)}
+              onClick={() => (s.key === 'registrants' ? onOpenRegistrants() : alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`))}
             >
               {s.label}
             </button>

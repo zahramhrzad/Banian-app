@@ -15,6 +15,7 @@ import ExhibitorReport from './ExhibitorReport'
 import ExhibitorScan, { type ScanLog } from './ExhibitorScan'
 import AdminLogin, { type AdminRole } from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
+import AdminRegistrants from './AdminRegistrants'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -56,6 +57,7 @@ type Step =
   | 'exhibitorScan'
   | 'adminLogin'
   | 'adminDashboard'
+  | 'adminRegistrants'
   | 'map'
   | 'participants'
   | 'panels'
@@ -177,12 +179,17 @@ function App() {
       <AdminDashboard
         displayName={adminDisplayName}
         role={adminRole}
+        onOpenRegistrants={() => setStep('adminRegistrants')}
         onLogout={() => {
           setAdminDisplayName('')
           setStep('select')
         }}
       />
     )
+  }
+
+  if (step === 'adminRegistrants') {
+    return <AdminRegistrants onBack={() => setStep('adminDashboard')} />
   }
 
   if (step === 'priority') {
