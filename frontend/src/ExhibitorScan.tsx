@@ -31,8 +31,9 @@ export default function ExhibitorScan({
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
   const [justScanned, setJustScanned] = useState<string | null>(null)
   const [cameraActive, setCameraActive] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
-const [videoReady, setVideoReady] = useState(false)
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -70,34 +71,46 @@ const [videoReady, setVideoReady] = useState(false)
   const startCamera = async () => {
     setCameraError(null)
     setVideoReady(false)
+
+    // مهم: اول تگ ویدیو رو توی صفحه فعال می‌کنیم تا videoRef حتماً به یه المنت واقعی وصل باشه،
+    // بعد از یه لحظه (بعد از رندر شدن) دنبال دسترسی دوربین می‌ریم
+    setCameraActive(true)
+
+    // یه فریم صبر می‌کنیم تا React واقعاً تگ ویدیو رو توی DOM بسازه
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+
+    if (!videoRef.current) {
+      setCameraError('خطای داخلی: المنت دوربین آماده نشد. لطفاً دوباره تلاش کنید.')
+      setCameraActive(false)
+      return
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
-      if (videoRef.current) {
-        const videoEl = videoRef.current
-        videoEl.srcObject = stream
-        // ست‌کردن صریح این دو ویژگی از طریق کد، چون سافاری روی آیفون گاهی به همون‌تعریف JSX اکتفا نمی‌کنه
-        videoEl.muted = true
-        videoEl.setAttribute('playsinline', 'true')
 
-        const markReady = () => setVideoReady(true)
-        videoEl.onloadedmetadata = markReady
-        videoEl.oncanplay = markReady
-        videoEl.onplaying = markReady
+      const videoEl = videoRef.current
+      videoEl.srcObject = stream
+      videoEl.muted = true
+      videoEl.setAttribute('playsinline', 'true')
+      videoEl.setAttribute('autoplay', 'true')
 
-        try {
-          await videoEl.play()
-        } catch {
-          // اگه play() بلافاصله رد بشه، رویدادهای بالا در صورت شروع واقعی پخش هنوز فعال می‌مونن
-        }
+      const markReady = () => setVideoReady(true)
+      videoEl.onloadedmetadata = markReady
+      videoEl.oncanplay = markReady
+      videoEl.onplaying = markReady
 
-        // اگه به هر دلیلی هیچ‌کدوم از رویدادها فعال نشد، بعد از ۲.۵ ثانیه پیام "در حال باز شدن" رو مخفی کن
-        setTimeout(markReady, 2500)
+      try {
+        await videoEl.play()
+      } catch {
+        // در برخی مرورگرها play() ممکنه رد بشه؛ رویدادهای بالا در صورت پخش واقعی همچنان فعال می‌شن
       }
-      setCameraActive(true)
+
+      setTimeout(markReady, 2500)
       scanLoop()
     } catch {
       setCameraError('دسترسی به دوربین امکان‌پذیر نشد. لطفاً اجازه‌ی دسترسی به دوربین را بدهید یا از ورود دستی استفاده کنید.')
+      setCameraActive(false)
     }
   }
 
@@ -107,7 +120,7 @@ const [videoReady, setVideoReady] = useState(false)
       streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
-   setCameraActive(false)
+    setCameraActive(false)
     setVideoReady(false)
   }
 
@@ -167,34 +180,41 @@ const [videoReady, setVideoReady] = useState(false)
           مشخص می‌کند کدام عضو تیم، کدام بازدیدکننده را کِی اسکن کرده است
         </p>
 
-        {!cameraActive ? (
-          <button
-            onClick={startCamera}
-            className="w-full rounded-2xl py-4 mb-3 flex flex-col items-center gap-2"
-            style={{ background: 'rgba(190,156,119,0.12)', border: '1.5px dashed rgba(190,156,119,0.5)', cursor: 'pointer' }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
-              <path d="M3 7V5a2 2 0 012-2h2M3 17v2a2 2 0 002 2h2M21 7V5a2 2 0 00-2-2h-2M21 17v2a2 2 0 01-2 2h-2" />
-              <rect x="8" y="8" width="8" height="8" rx="1" />
-            </svg>
-            <span className="text-[11px] font-bold" style={{ color: '#be9c77' }}>شروع اسکن با دوربین</span>
-          </button>
-       ) : (
-          <div className="rounded-2xl overflow-hidden mb-3 relative" style={{ background: '#000', height: '260px' }}>
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full"
-              style={{ objectFit: 'cover' }}
-            />
-            <canvas ref={canvasRef} className="hidden" />
-            {!videoReady && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px]" style={{ color: '#9b9baf' }}>در حال باز شدن دوربین...</span>
-              </div>
-            )}
+        <div
+          className="rounded-2xl overflow-hidden mb-3 relative"
+          style={{ background: '#000', height: cameraActive ? '260px' : 'auto' }}
+        >
+          {!cameraActive && (
+            <button
+              onClick={startCamera}
+              className="w-full py-4 flex flex-col items-center gap-2"
+              style={{ background: 'rgba(190,156,119,0.12)', border: '1.5px dashed rgba(190,156,119,0.5)', cursor: 'pointer' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
+                <path d="M3 7V5a2 2 0 012-2h2M3 17v2a2 2 0 002 2h2M21 7V5a2 2 0 00-2-2h-2M21 17v2a2 2 0 01-2 2h-2" />
+                <rect x="8" y="8" width="8" height="8" rx="1" />
+              </svg>
+              <span className="text-[11px] font-bold" style={{ color: '#be9c77' }}>شروع اسکن با دوربین</span>
+            </button>
+          )}
+
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className={cameraActive ? 'w-full h-full' : 'hidden'}
+            style={{ objectFit: 'cover' }}
+          />
+          <canvas ref={canvasRef} className="hidden" />
+
+          {cameraActive && !videoReady && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[10px]" style={{ color: '#9b9baf' }}>در حال باز شدن دوربین...</span>
+            </div>
+          )}
+
+          {cameraActive && (
             <button
               onClick={stopCamera}
               className="absolute top-2 left-2 text-[10px] font-bold px-3 py-1.5 rounded-full"
@@ -202,8 +222,8 @@ const [videoReady, setVideoReady] = useState(false)
             >
               توقف دوربین
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {cameraError && (
           <div
