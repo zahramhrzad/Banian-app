@@ -32,7 +32,7 @@ export default function ExhibitorScan({
   const [justScanned, setJustScanned] = useState<string | null>(null)
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
-
+const [videoReady, setVideoReady] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -69,12 +69,18 @@ export default function ExhibitorScan({
 
   const startCamera = async () => {
     setCameraError(null)
+    setVideoReady(false)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        await videoRef.current.play()
+        videoRef.current.onloadedmetadata = () => setVideoReady(true)
+        try {
+          await videoRef.current.play()
+        } catch {
+          // روی برخی نسخه‌های سافاری play() بلافاصله جواب نمی‌ده؛ چون autoPlay هم روی ویدیو تنظیم شده، مشکلی نیست
+        }
       }
       setCameraActive(true)
       scanLoop()
@@ -89,7 +95,8 @@ export default function ExhibitorScan({
       streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
-    setCameraActive(false)
+   setCameraActive(false)
+    setVideoReady(false)
   }
 
   const scanLoop = () => {
@@ -160,10 +167,22 @@ export default function ExhibitorScan({
             </svg>
             <span className="text-[11px] font-bold" style={{ color: '#be9c77' }}>شروع اسکن با دوربین</span>
           </button>
-        ) : (
-          <div className="rounded-2xl overflow-hidden mb-3 relative" style={{ background: '#000' }}>
-            <video ref={videoRef} className="w-full" style={{ maxHeight: '260px', objectFit: 'cover' }} muted playsInline />
+       ) : (
+          <div className="rounded-2xl overflow-hidden mb-3 relative" style={{ background: '#000', height: '260px' }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full"
+              style={{ objectFit: 'cover' }}
+            />
             <canvas ref={canvasRef} className="hidden" />
+            {!videoReady && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px]" style={{ color: '#9b9baf' }}>در حال باز شدن دوربین...</span>
+              </div>
+            )}
             <button
               onClick={stopCamera}
               className="absolute top-2 left-2 text-[10px] font-bold px-3 py-1.5 rounded-full"
