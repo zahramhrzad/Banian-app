@@ -71,12 +71,8 @@ export default function ExhibitorScan({
   const startCamera = async () => {
     setCameraError(null)
     setVideoReady(false)
-
-    // مهم: اول تگ ویدیو رو توی صفحه فعال می‌کنیم تا videoRef حتماً به یه المنت واقعی وصل باشه،
-    // بعد از یه لحظه (بعد از رندر شدن) دنبال دسترسی دوربین می‌ریم
     setCameraActive(true)
 
-    // یه فریم صبر می‌کنیم تا React واقعاً تگ ویدیو رو توی DOM بسازه
     await new Promise((resolve) => requestAnimationFrame(resolve))
 
     if (!videoRef.current) {
@@ -103,7 +99,7 @@ export default function ExhibitorScan({
       try {
         await videoEl.play()
       } catch {
-        // در برخی مرورگرها play() ممکنه رد بشه؛ رویدادهای بالا در صورت پخش واقعی همچنان فعال می‌شن
+        // برخی مرورگرها ممکنه play() رو بلافاصله رد کنن؛ رویدادهای بالا در صورت پخش واقعی فعال می‌شن
       }
 
       setTimeout(markReady, 2500)
@@ -180,31 +176,19 @@ export default function ExhibitorScan({
           مشخص می‌کند کدام عضو تیم، کدام بازدیدکننده را کِی اسکن کرده است
         </p>
 
+        {/* این کادر همیشه توی صفحه وجود داره (هیچ‌وقت hidden نمی‌شه) تا سافاری آیفون تصویر دوربین رو گم نکنه؛
+            وقتی دوربین خاموشه فقط ارتفاعش صفر می‌شه */}
         <div
-          className="rounded-2xl overflow-hidden mb-3 relative"
-          style={{ background: '#000', height: cameraActive ? '260px' : 'auto' }}
+          className="rounded-2xl overflow-hidden relative"
+          style={{ background: '#000', height: cameraActive ? '260px' : '0px', transition: 'height 0.2s' }}
         >
-          {!cameraActive && (
-            <button
-              onClick={startCamera}
-              className="w-full py-4 flex flex-col items-center gap-2"
-              style={{ background: 'rgba(190,156,119,0.12)', border: '1.5px dashed rgba(190,156,119,0.5)', cursor: 'pointer' }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
-                <path d="M3 7V5a2 2 0 012-2h2M3 17v2a2 2 0 002 2h2M21 7V5a2 2 0 00-2-2h-2M21 17v2a2 2 0 01-2 2h-2" />
-                <rect x="8" y="8" width="8" height="8" rx="1" />
-              </svg>
-              <span className="text-[11px] font-bold" style={{ color: '#be9c77' }}>شروع اسکن با دوربین</span>
-            </button>
-          )}
-
           <video
             ref={videoRef}
             autoPlay
             muted
             playsInline
-            className={cameraActive ? 'w-full h-full' : 'hidden'}
-            style={{ objectFit: 'cover' }}
+            className="w-full h-full"
+            style={{ objectFit: 'cover', display: 'block' }}
           />
           <canvas ref={canvasRef} className="hidden" />
 
@@ -215,7 +199,7 @@ export default function ExhibitorScan({
           )}
 
           {cameraActive && videoReady && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div style={{ position: 'relative', width: '170px', height: '170px' }}>
                 <div style={{ position: 'absolute', top: 0, right: 0, width: '26px', height: '26px', borderTop: '3px solid #e8cfa8', borderRight: '3px solid #e8cfa8', borderRadius: '4px 8px 0 0' }} />
                 <div style={{ position: 'absolute', top: 0, left: 0, width: '26px', height: '26px', borderTop: '3px solid #e8cfa8', borderLeft: '3px solid #e8cfa8', borderRadius: '8px 4px 0 0' }} />
@@ -255,6 +239,22 @@ export default function ExhibitorScan({
             </button>
           )}
         </div>
+
+        {!cameraActive && (
+          <button
+            onClick={startCamera}
+            className="w-full py-4 mt-3 mb-3 flex flex-col items-center gap-2 rounded-2xl"
+            style={{ background: 'rgba(190,156,119,0.12)', border: '1.5px dashed rgba(190,156,119,0.5)', cursor: 'pointer' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
+              <path d="M3 7V5a2 2 0 012-2h2M3 17v2a2 2 0 002 2h2M21 7V5a2 2 0 00-2-2h-2M21 17v2a2 2 0 01-2 2h-2" />
+              <rect x="8" y="8" width="8" height="8" rx="1" />
+            </svg>
+            <span className="text-[11px] font-bold" style={{ color: '#be9c77' }}>شروع اسکن با دوربین</span>
+          </button>
+        )}
+
+        {cameraActive && <div className="mb-3" />}
 
         {cameraError && (
           <div
