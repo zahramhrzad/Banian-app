@@ -13,6 +13,8 @@ import ExhibitorInvites, { type SentInvite } from './ExhibitorInvites'
 import ExhibitorAppointments, { type MeetingRequest } from './ExhibitorAppointments'
 import ExhibitorReport from './ExhibitorReport'
 import ExhibitorScan, { type ScanLog } from './ExhibitorScan'
+import AdminLogin, { type AdminRole } from './AdminLogin'
+import AdminDashboard from './AdminDashboard'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -52,6 +54,8 @@ type Step =
   | 'exhibitorAppointments'
   | 'exhibitorReport'
   | 'exhibitorScan'
+  | 'adminLogin'
+  | 'adminDashboard'
   | 'map'
   | 'participants'
   | 'panels'
@@ -94,6 +98,8 @@ const initialMeetingRequests: MeetingRequest[] = [
 function App() {
   const [step, setStep] = useState<Step>('splash')
   const [userType, setUserType] = useState<'visitor' | 'exhibitor'>('visitor')
+  const [adminDisplayName, setAdminDisplayName] = useState('')
+  const [adminRole, setAdminRole] = useState<AdminRole>('operator')
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
   const [priorityCategories, setPriorityCategories] = useState<string[]>([])
@@ -147,7 +153,34 @@ function App() {
           setUserType(type)
           setStep('priority')
         }}
+        onAdminClick={() => setStep('adminLogin')}
         onBack={() => setStep('splash')}
+      />
+    )
+  }
+
+  if (step === 'adminLogin') {
+    return (
+      <AdminLogin
+        onSubmit={(_username, role, displayName) => {
+          setAdminRole(role)
+          setAdminDisplayName(displayName)
+          setStep('adminDashboard')
+        }}
+        onBack={() => setStep('select')}
+      />
+    )
+  }
+
+  if (step === 'adminDashboard') {
+    return (
+      <AdminDashboard
+        displayName={adminDisplayName}
+        role={adminRole}
+        onLogout={() => {
+          setAdminDisplayName('')
+          setStep('select')
+        }}
       />
     )
   }

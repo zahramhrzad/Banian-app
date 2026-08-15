@@ -3,9 +3,11 @@ import PageTitle from './PageTitle'
 
 function UserTypeSelect({
   onSelect,
+  onAdminClick,
   onBack,
 }: {
   onSelect: (type: 'visitor' | 'exhibitor') => void
+  onAdminClick: () => void
   onBack: () => void
 }) {
   return (
@@ -76,6 +78,14 @@ function UserTypeSelect({
           <span className="text-base md:text-lg font-bold" style={{ color: '#1b2134' }}>غرفه‌دار</span>
         </button>
       </div>
+
+      <button
+        onClick={onAdminClick}
+        className="mt-6 text-[10px] underline z-10"
+        style={{ color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}
+      >
+        ورود مدیریت نمایشگاه
+      </button>
     </div>
   )
 }
