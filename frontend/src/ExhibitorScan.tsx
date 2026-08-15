@@ -74,13 +74,25 @@ const [videoReady, setVideoReady] = useState(false)
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
       if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.onloadedmetadata = () => setVideoReady(true)
+        const videoEl = videoRef.current
+        videoEl.srcObject = stream
+        // ست‌کردن صریح این دو ویژگی از طریق کد، چون سافاری روی آیفون گاهی به همون‌تعریف JSX اکتفا نمی‌کنه
+        videoEl.muted = true
+        videoEl.setAttribute('playsinline', 'true')
+
+        const markReady = () => setVideoReady(true)
+        videoEl.onloadedmetadata = markReady
+        videoEl.oncanplay = markReady
+        videoEl.onplaying = markReady
+
         try {
-          await videoRef.current.play()
+          await videoEl.play()
         } catch {
-          // روی برخی نسخه‌های سافاری play() بلافاصله جواب نمی‌ده؛ چون autoPlay هم روی ویدیو تنظیم شده، مشکلی نیست
+          // اگه play() بلافاصله رد بشه، رویدادهای بالا در صورت شروع واقعی پخش هنوز فعال می‌مونن
         }
+
+        // اگه به هر دلیلی هیچ‌کدوم از رویدادها فعال نشد، بعد از ۲.۵ ثانیه پیام "در حال باز شدن" رو مخفی کن
+        setTimeout(markReady, 2500)
       }
       setCameraActive(true)
       scanLoop()
