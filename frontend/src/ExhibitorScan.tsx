@@ -214,6 +214,37 @@ export default function ExhibitorScan({
             </div>
           )}
 
+          {cameraActive && videoReady && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <div style={{ position: 'relative', width: '170px', height: '170px' }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '26px', height: '26px', borderTop: '3px solid #e8cfa8', borderRight: '3px solid #e8cfa8', borderRadius: '4px 8px 0 0' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '26px', height: '26px', borderTop: '3px solid #e8cfa8', borderLeft: '3px solid #e8cfa8', borderRadius: '8px 4px 0 0' }} />
+                <div style={{ position: 'absolute', bottom: 0, right: 0, width: '26px', height: '26px', borderBottom: '3px solid #e8cfa8', borderRight: '3px solid #e8cfa8', borderRadius: '0 0 8px 4px' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, width: '26px', height: '26px', borderBottom: '3px solid #e8cfa8', borderLeft: '3px solid #e8cfa8', borderRadius: '0 0 4px 8px' }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: '6px',
+                    left: '6px',
+                    height: '2px',
+                    background: 'linear-gradient(90deg, transparent, #e8cfa8, transparent)',
+                    animation: 'banianScanLine 2s ease-in-out infinite',
+                  }}
+                />
+              </div>
+              <span className="text-[9.5px] mt-4" style={{ color: '#e8cfa8' }}>
+                QR کد بلیط را داخل قاب قرار دهید
+              </span>
+              <style>{`
+                @keyframes banianScanLine {
+                  0% { top: 4px; opacity: 0.3; }
+                  50% { top: calc(100% - 6px); opacity: 1; }
+                  100% { top: 4px; opacity: 0.3; }
+                }
+              `}</style>
+            </div>
+          )}
+
           {cameraActive && (
             <button
               onClick={stopCamera}
