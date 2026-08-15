@@ -3,6 +3,12 @@ import type { AdminRole } from './AdminLogin'
 
 const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
 
+export interface ActivityLogEntry {
+  admin: string
+  action: string
+  time: string
+}
+
 // داده‌ی نمونه — تا وصل‌شدن به دیتابیس واقعی
 const mockStats = {
   totalVisitors: 1240,
@@ -27,12 +33,6 @@ const mockWarnings = [
   '۳ درخواست ملاقات بیش از ۲۴ ساعت بدون پاسخ مانده',
 ]
 
-const mockActivityLog = [
-  { admin: 'مدیر کل', action: 'پروموشن «تخفیف ویژه بانک آینده» را منتشر کرد', time: '۱۰ دقیقه پیش' },
-  { admin: 'اپراتور دیتا', action: 'اطلاعات غرفه‌ی «کارگزاری آگاه» را ویرایش کرد', time: '۴۵ دقیقه پیش' },
-  { admin: 'مدیر کل', action: 'اعلان هدفمند برای حوزه‌ی بیمه ارسال کرد', time: '۲ ساعت پیش' },
-]
-
 const navSections = [
   { key: 'registrants', label: 'ثبت‌نامی‌ها' },
   { key: 'dataEntry', label: 'پیشخوان Data Entry' },
@@ -49,12 +49,16 @@ function points(values: number[]) {
 export default function AdminDashboard({
   displayName,
   role,
+  activityLog,
   onOpenRegistrants,
+  onOpenDataEntry,
   onLogout,
 }: {
   displayName: string
   role: AdminRole
+  activityLog: ActivityLogEntry[]
   onOpenRegistrants: () => void
+  onOpenDataEntry: () => void
   onLogout: () => void
 }) {
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
@@ -156,7 +160,7 @@ export default function AdminDashboard({
         <div className="rounded-2xl p-3 mb-4" style={cardStyle}>
           <div className="text-[9px] font-bold mb-2" style={{ color: '#e8cfa8' }}>لاگ فعالیت مدیران</div>
           <div className="flex flex-col gap-2">
-            {mockActivityLog.map((log, i) => (
+            {activityLog.map((log, i) => (
               <div key={i} className="text-[8px] leading-relaxed" style={{ color: '#9b9baf' }}>
                 <span style={{ color: '#e8cfa8', fontWeight: 700 }}>{log.admin}</span> {log.action}
                 <span style={{ color: '#6f6e78' }}> · {log.time}</span>
@@ -171,7 +175,11 @@ export default function AdminDashboard({
               key={s.key}
               className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex items-center justify-center gap-1.5"
               style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
-              onClick={() => (s.key === 'registrants' ? onOpenRegistrants() : alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`))}
+              onClick={() => {
+                if (s.key === 'registrants') onOpenRegistrants()
+                else if (s.key === 'dataEntry') onOpenDataEntry()
+                else alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`)
+              }}
             >
               {s.label}
             </button>

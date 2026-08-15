@@ -14,8 +14,9 @@ import ExhibitorAppointments, { type MeetingRequest } from './ExhibitorAppointme
 import ExhibitorReport from './ExhibitorReport'
 import ExhibitorScan, { type ScanLog } from './ExhibitorScan'
 import AdminLogin, { type AdminRole } from './AdminLogin'
-import AdminDashboard from './AdminDashboard'
+import AdminDashboard, { type ActivityLogEntry } from './AdminDashboard'
 import AdminRegistrants from './AdminRegistrants'
+import AdminDataEntry from './AdminDataEntry'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -58,6 +59,7 @@ type Step =
   | 'adminLogin'
   | 'adminDashboard'
   | 'adminRegistrants'
+  | 'adminDataEntry'
   | 'map'
   | 'participants'
   | 'panels'
@@ -102,6 +104,11 @@ function App() {
   const [userType, setUserType] = useState<'visitor' | 'exhibitor'>('visitor')
   const [adminDisplayName, setAdminDisplayName] = useState('')
   const [adminRole, setAdminRole] = useState<AdminRole>('operator')
+  const [adminActivityLog, setAdminActivityLog] = useState<ActivityLogEntry[]>([
+    { admin: 'مدیر کل', action: 'پروموشن «تخفیف ویژه بانک آینده» را منتشر کرد', time: '۱۰ دقیقه پیش' },
+    { admin: 'اپراتور دیتا', action: 'اطلاعات غرفه‌ی «کارگزاری آگاه» را ویرایش کرد', time: '۴۵ دقیقه پیش' },
+    { admin: 'مدیر کل', action: 'اعلان هدفمند برای حوزه‌ی بیمه ارسال کرد', time: '۲ ساعت پیش' },
+  ])
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
   const [priorityCategories, setPriorityCategories] = useState<string[]>([])
@@ -146,6 +153,10 @@ function App() {
     setStep('login')
   }
 
+  const logAdminActivity = (action: string) => {
+    setAdminActivityLog((prev) => [{ admin: adminDisplayName || 'مدیر', action, time: 'همین الان' }, ...prev])
+  }
+
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
 
   if (step === 'select') {
@@ -179,7 +190,9 @@ function App() {
       <AdminDashboard
         displayName={adminDisplayName}
         role={adminRole}
+        activityLog={adminActivityLog}
         onOpenRegistrants={() => setStep('adminRegistrants')}
+        onOpenDataEntry={() => setStep('adminDataEntry')}
         onLogout={() => {
           setAdminDisplayName('')
           setStep('select')
@@ -190,6 +203,10 @@ function App() {
 
   if (step === 'adminRegistrants') {
     return <AdminRegistrants onBack={() => setStep('adminDashboard')} />
+  }
+
+  if (step === 'adminDataEntry') {
+    return <AdminDataEntry onLogActivity={logAdminActivity} onBack={() => setStep('adminDashboard')} />
   }
 
   if (step === 'priority') {
