@@ -17,6 +17,7 @@ import AdminLogin, { type AdminRole } from './AdminLogin'
 import AdminDashboard, { type ActivityLogEntry } from './AdminDashboard'
 import AdminRegistrants from './AdminRegistrants'
 import AdminDataEntry from './AdminDataEntry'
+import AdminPromotions from './AdminPromotions'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -60,6 +61,7 @@ type Step =
   | 'adminDashboard'
   | 'adminRegistrants'
   | 'adminDataEntry'
+  | 'adminPromotions'
   | 'map'
   | 'participants'
   | 'panels'
@@ -193,6 +195,7 @@ function App() {
         activityLog={adminActivityLog}
         onOpenRegistrants={() => setStep('adminRegistrants')}
         onOpenDataEntry={() => setStep('adminDataEntry')}
+        onOpenPromotions={() => setStep('adminPromotions')}
         onLogout={() => {
           setAdminDisplayName('')
           setStep('select')
@@ -207,6 +210,10 @@ function App() {
 
   if (step === 'adminDataEntry') {
     return <AdminDataEntry onLogActivity={logAdminActivity} onBack={() => setStep('adminDashboard')} />
+  }
+
+  if (step === 'adminPromotions') {
+    return <AdminPromotions onLogActivity={logAdminActivity} onBack={() => setStep('adminDashboard')} />
   }
 
   if (step === 'priority') {
