@@ -117,14 +117,15 @@ export default function ExhibitorDashboard({
               </span>
             )}
           </div>
-          <div
+          <button
+            onClick={onLogout}
             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(190,156,119,0.18)' }}
+            style={{ background: 'rgba(190,156,119,0.18)', border: 'none', cursor: 'pointer' }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
               <path d="M3 21h18M4 21V9l8-5 8 5v12M9 21v-6h6v6" />
             </svg>
-          </div>
+          </button>
         </div>
 
         <div className="rounded-2xl p-4 mb-3" style={groupCardStyle}>
