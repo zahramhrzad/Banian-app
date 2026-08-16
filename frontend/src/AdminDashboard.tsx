@@ -56,6 +56,7 @@ export default function AdminDashboard({
   onOpenDataEntry,
   onOpenPromotions,
   onOpenNotifications,
+  onOpenScans,
   onLogout,
 }: {
   displayName: string
@@ -67,6 +68,7 @@ export default function AdminDashboard({
   onOpenDataEntry: () => void
   onOpenPromotions: () => void
   onOpenNotifications: () => void
+  onOpenScans: () => void
   onLogout: () => void
 }) {
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
@@ -188,6 +190,7 @@ export default function AdminDashboard({
                 else if (s.key === 'dataEntry') onOpenDataEntry()
                 else if (s.key === 'promotions') onOpenPromotions()
                 else if (s.key === 'notifications') onOpenNotifications()
+                else if (s.key === 'scans') onOpenScans()
                 else alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`)
               }}
             >

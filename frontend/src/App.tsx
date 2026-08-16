@@ -20,6 +20,7 @@ import AdminDataEntry from './AdminDataEntry'
 import AdminPromotions from './AdminPromotions'
 import AdminNotifications, { type AdminNotificationEntry } from './AdminNotifications'
 import ExhibitorNotifications, { type ExhibitorNotificationEntry } from './ExhibitorNotifications'
+import AdminScans from './AdminScans'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -66,6 +67,7 @@ type Step =
   | 'adminPromotions'
   | 'adminNotifications'
   | 'exhibitorNotifications'
+  | 'adminScans'
   | 'map'
   | 'participants'
   | 'panels'
@@ -207,12 +209,17 @@ function App() {
         onOpenDataEntry={() => setStep('adminDataEntry')}
         onOpenPromotions={() => setStep('adminPromotions')}
         onOpenNotifications={() => setStep('adminNotifications')}
+        onOpenScans={() => setStep('adminScans')}
         onLogout={() => {
           setAdminDisplayName('')
           setStep('select')
         }}
       />
     )
+  }
+
+  if (step === 'adminScans') {
+    return <AdminScans onBack={() => setStep('adminDashboard')} />
   }
 
   if (step === 'adminRegistrants') {
