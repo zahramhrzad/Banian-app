@@ -18,6 +18,8 @@ import AdminDashboard, { type ActivityLogEntry } from './AdminDashboard'
 import AdminRegistrants from './AdminRegistrants'
 import AdminDataEntry from './AdminDataEntry'
 import AdminPromotions from './AdminPromotions'
+import AdminNotifications, { type AdminNotificationEntry } from './AdminNotifications'
+import ExhibitorNotifications, { type ExhibitorNotificationEntry } from './ExhibitorNotifications'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import OtpVerify from './OtpVerify'
 import Registration from './Registration'
@@ -62,6 +64,8 @@ type Step =
   | 'adminRegistrants'
   | 'adminDataEntry'
   | 'adminPromotions'
+  | 'adminNotifications'
+  | 'exhibitorNotifications'
   | 'map'
   | 'participants'
   | 'panels'
@@ -131,6 +135,10 @@ function App() {
   const [sentInvites, setSentInvites] = useState<SentInvite[]>([])
   const [meetingRequests, setMeetingRequests] = useState<MeetingRequest[]>(initialMeetingRequests)
   const [scanLogs, setScanLogs] = useState<ScanLog[]>([])
+  const [notificationCreditRate, setNotificationCreditRate] = useState(100)
+  const [adminNotificationHistory, setAdminNotificationHistory] = useState<AdminNotificationEntry[]>([])
+  const [exhibitorNotificationCredits, setExhibitorNotificationCredits] = useState(3)
+  const [exhibitorNotificationHistory, setExhibitorNotificationHistory] = useState<ExhibitorNotificationEntry[]>([])
   void visitGoals
   void registrationData
 
@@ -193,9 +201,12 @@ function App() {
         displayName={adminDisplayName}
         role={adminRole}
         activityLog={adminActivityLog}
+        notificationCreditRate={notificationCreditRate}
+        setNotificationCreditRate={setNotificationCreditRate}
         onOpenRegistrants={() => setStep('adminRegistrants')}
         onOpenDataEntry={() => setStep('adminDataEntry')}
         onOpenPromotions={() => setStep('adminPromotions')}
+        onOpenNotifications={() => setStep('adminNotifications')}
         onLogout={() => {
           setAdminDisplayName('')
           setStep('select')
@@ -214,6 +225,30 @@ function App() {
 
   if (step === 'adminPromotions') {
     return <AdminPromotions onLogActivity={logAdminActivity} onBack={() => setStep('adminDashboard')} />
+  }
+
+  if (step === 'adminNotifications') {
+    return (
+      <AdminNotifications
+        history={adminNotificationHistory}
+        setHistory={setAdminNotificationHistory}
+        onLogActivity={logAdminActivity}
+        onBack={() => setStep('adminDashboard')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorNotifications') {
+    return (
+      <ExhibitorNotifications
+        credits={exhibitorNotificationCredits}
+        setCredits={setExhibitorNotificationCredits}
+        recipientsPerCredit={notificationCreditRate}
+        history={exhibitorNotificationHistory}
+        setHistory={setExhibitorNotificationHistory}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
   }
 
   if (step === 'priority') {
@@ -395,6 +430,7 @@ function App() {
         onOpenAppointments={() => setStep('exhibitorAppointments')}
         onOpenReport={() => setStep('exhibitorReport')}
         onOpenScan={() => setStep('exhibitorScan')}
+        onOpenNotifications={() => setStep('exhibitorNotifications')}
         onLogout={handleExhibitorLogout}
       />
     )

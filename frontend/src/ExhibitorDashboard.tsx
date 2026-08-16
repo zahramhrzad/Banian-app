@@ -31,8 +31,9 @@ interface ExhibitorDashboardProps {
   onOpenPromotions: () => void
   onOpenInvites: () => void
   onOpenAppointments: () => void
- onOpenReport: () => void
+  onOpenReport: () => void
   onOpenScan: () => void
+  onOpenNotifications: () => void
   onLogout: () => void
 }
 
@@ -53,6 +54,7 @@ export default function ExhibitorDashboard({
   onOpenAppointments,
   onOpenReport,
   onOpenScan,
+  onOpenNotifications,
   onLogout,
 }: ExhibitorDashboardProps) {
   const cat = productCategoryInfo(activityCategory as CategoryId)
@@ -259,6 +261,14 @@ export default function ExhibitorDashboard({
           style={{ ...groupCardStyle, cursor: 'pointer' }}
         >
           <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>ثبت اسکن بازدیدکننده</span>
+        </button>
+
+        <button
+          onClick={onOpenNotifications}
+          className="w-full rounded-2xl p-3 mb-3 text-right"
+          style={{ ...groupCardStyle, cursor: 'pointer' }}
+        >
+          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>ارسال اعلان به بازدیدکنندگان</span>
         </button>
 
         <button

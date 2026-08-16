@@ -50,17 +50,23 @@ export default function AdminDashboard({
   displayName,
   role,
   activityLog,
+  notificationCreditRate,
+  setNotificationCreditRate,
   onOpenRegistrants,
   onOpenDataEntry,
   onOpenPromotions,
+  onOpenNotifications,
   onLogout,
 }: {
   displayName: string
   role: AdminRole
   activityLog: ActivityLogEntry[]
+  notificationCreditRate: number
+  setNotificationCreditRate: React.Dispatch<React.SetStateAction<number>>
   onOpenRegistrants: () => void
   onOpenDataEntry: () => void
   onOpenPromotions: () => void
+  onOpenNotifications: () => void
   onLogout: () => void
 }) {
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
@@ -181,12 +187,28 @@ export default function AdminDashboard({
                 if (s.key === 'registrants') onOpenRegistrants()
                 else if (s.key === 'dataEntry') onOpenDataEntry()
                 else if (s.key === 'promotions') onOpenPromotions()
+                else if (s.key === 'notifications') onOpenNotifications()
                 else alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`)
               }}
             >
               {s.label}
             </button>
           ))}
+        </div>
+
+        <div className="rounded-2xl p-3 mb-4" style={cardStyle}>
+          <div className="text-[9px] font-bold mb-1.5" style={{ color: '#e8cfa8' }}>نرخ اعتبار اعلان غرفه‌داران</div>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px]" style={{ color: '#9b9baf' }}>هر</span>
+            <input
+              type="number"
+              value={notificationCreditRate}
+              onChange={(e) => setNotificationCreditRate(Number(e.target.value) || 1)}
+              className="rounded-lg px-2 py-1 text-[10px] outline-none w-16 text-center"
+              style={{ color: '#1b2134' }}
+            />
+            <span className="text-[9px]" style={{ color: '#9b9baf' }}>مخاطب = ۱ اعتبار</span>
+          </div>
         </div>
 
         <div className="text-center">
