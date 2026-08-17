@@ -9,10 +9,12 @@ function VisitorDashboard({
   name,
   onOpenCard,
   onOpenMap,
+  onOpenAccess,
   onOpenParticipants,
   onOpenPanels,
   onOpenMyAppointments,
   onOpenNotifications,
+  onOpenBoothScan,
   promotions,
   savedPromotionIds,
   onTogglePromotionSave,
@@ -22,10 +24,12 @@ function VisitorDashboard({
   name: string
   onOpenCard: () => void
   onOpenMap: () => void
+  onOpenAccess: () => void
   onOpenParticipants: () => void
   onOpenPanels: () => void
   onOpenMyAppointments: () => void
   onOpenNotifications: () => void
+  onOpenBoothScan: () => void
   promotions: Promotion[]
   savedPromotionIds: Set<string>
   onTogglePromotionSave: (id: string) => void
@@ -148,7 +152,7 @@ function VisitorDashboard({
             <text x="230" y="63" fontSize="9" fill="#1b2134" textAnchor="middle">سالن F</text>
           </svg>
           <div className="flex justify-between items-center mt-1.5">
-            <span className="text-[9.5px]" style={{ color: '#9b9baf' }}>نقشه کوچک سالن‌ها</span>
+            <span className="text-[9.5px]" style={{ color: '#9b9baf' }}>نقشه‌ها</span>
             <span className="text-[9.5px] font-bold" style={{ color: '#be9c77' }}>مشاهده نقشه کامل ›</span>
           </div>
         </button>
@@ -178,7 +182,7 @@ function VisitorDashboard({
             <div className="text-[9px] font-bold" style={{ color: '#1b2134' }}>برنامه پنل‌ها</div>
           </button>
           <button
-            onClick={onOpenMap}
+            onClick={onOpenAccess}
             {...glowHandlers('access')}
             className="bg-white rounded-xl py-2.5 px-1 text-center cursor-pointer"
             style={glowStyle('access')}
@@ -187,7 +191,7 @@ function VisitorDashboard({
               <circle cx="12" cy="10" r="3" />
               <path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z" />
             </svg>
-            <div className="text-[9px] font-bold" style={{ color: '#1b2134' }}>نقشه دسترسی</div>
+            <div className="text-[9px] font-bold" style={{ color: '#1b2134' }}>دسترسی‌ها</div>
           </button>
         </div>
 
@@ -253,13 +257,13 @@ function VisitorDashboard({
           </svg>
           <div className="text-[8.5px] mt-0.5" style={{ color: '#9b9baf' }}>قرارهای من</div>
         </button>
-        <button onClick={onOpenCard} className="text-center cursor-pointer">
+        <button onClick={onOpenBoothScan} className="text-center cursor-pointer">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9b9baf" strokeWidth="2" className="mx-auto">
             <rect x="3" y="3" width="7" height="7" />
             <rect x="14" y="3" width="7" height="7" />
             <rect x="3" y="14" width="7" height="7" />
           </svg>
-          <div className="text-[8.5px] mt-0.5" style={{ color: '#9b9baf' }}>QR</div>
+          <div className="text-[8.5px] mt-0.5" style={{ color: '#9b9baf' }}>اسکن QR غرفه</div>
         </button>
         <button onClick={onOpenNotifications} className="text-center cursor-pointer">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9b9baf" strokeWidth="2" className="mx-auto">

@@ -22,6 +22,8 @@ export interface MeetingRequest {
   agreementNotes: string
   approvedByStaffName: string
   approvedAt: number | null
+  boothCompany: string
+  createdAt: number
   agreementTopic?: string
   agreementLocation?: string
   agreementCategory?: CategoryId | ''
@@ -51,6 +53,7 @@ export default function ExhibitorAppointments({
   agreements,
   setAgreements,
   onOpenAgreements,
+  onNotifyVisitor,
   onBack,
 }: {
   requests: MeetingRequest[]
@@ -60,6 +63,7 @@ export default function ExhibitorAppointments({
   agreements: Agreement[]
   setAgreements: React.Dispatch<React.SetStateAction<Agreement[]>>
   onOpenAgreements: () => void
+  onNotifyVisitor?: (request: MeetingRequest, approved: boolean) => void
   onBack: () => void
 }) {
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
@@ -97,13 +101,21 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
           : r
       )
       const updated = next.find((r) => r.id === id)
-      if (updated) syncLinkedAgreement(updated)
+      if (updated) {
+        syncLinkedAgreement(updated)
+        onNotifyVisitor?.(updated, true)
+      }
       return next
     })
   }
 
   const decline = (id: string) => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'declined' } : r)))
+    setRequests((prev) => {
+      const next = prev.map((r) => (r.id === id ? { ...r, status: 'declined' as const } : r))
+      const updated = next.find((r) => r.id === id)
+      if (updated) onNotifyVisitor?.(updated, false)
+      return next
+    })
   }
 
   const updateField = (id: string, patch: Partial<MeetingRequest>) => {
@@ -194,14 +206,24 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
                       </div>
                       <div className="flex-1">
                         <div className="text-[11px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</div>
-                        {cat && (
-                          <span
-                            className="inline-block text-[7.5px] font-bold px-1.5 py-0.5 rounded-md mt-0.5"
-                            style={{ background: cat.color, color: cat.text }}
-                          >
-                            {cat.label}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          {r.boothCompany && (
+                            <span
+                              className="inline-block text-[7.5px] font-bold px-1.5 py-0.5 rounded-md"
+                              style={{ background: '#eee7da', color: '#8a6d4d' }}
+                            >
+                              غرفه: {r.boothCompany}
+                            </span>
+                          )}
+                          {cat && (
+                            <span
+                              className="inline-block text-[7.5px] font-bold px-1.5 py-0.5 rounded-md"
+                              style={{ background: cat.color, color: cat.text }}
+                            >
+                              {cat.label}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div
@@ -246,7 +268,12 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
                 return (
                   <div key={r.id} className="bg-white rounded-2xl p-3.5">
                     <div className="flex items-center justify-between mb-2.5">
-                      <span className="text-[11px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                      <div>
+                        <span className="text-[11px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                        {r.boothCompany && (
+                          <div className="text-[8px] mt-0.5" style={{ color: '#9b9baf' }}>غرفه: {r.boothCompany}</div>
+                        )}
+                      </div>
                       <span
                         className="text-[8px] font-bold px-2 py-1 rounded-full"
                         style={{ background: st.bg, color: st.text }}
@@ -393,7 +420,12 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
               {declined.map((r) => (
                 <div key={r.id} className="bg-white rounded-xl px-3.5 py-2.5" style={{ opacity: 0.85 }}>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                    <div>
+                      <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                      {r.boothCompany && (
+                        <div className="text-[8px] mt-0.5" style={{ color: '#9b9baf' }}>غرفه: {r.boothCompany}</div>
+                      )}
+                    </div>
                     <span className="text-[8px] font-bold" style={{ color: '#c76b5f' }}>رد شده</span>
                   </div>
                   <button

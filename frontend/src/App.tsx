@@ -5,7 +5,7 @@ import VisitPriority from './VisitPriority'
 import VisitGoal from './VisitGoal'
 import MobileLogin from './MobileLogin'
 import ExhibitorLogin from './ExhibitorLogin'
-import ExhibitorProducts, { type Product } from './ExhibitorProducts'
+import ExhibitorProducts, { type Product, type CategoryId } from './ExhibitorProducts'
 import ExhibitorPanels, { type PanelSession } from './ExhibitorPanels'
 import ExhibitorAgreements, { type Agreement } from './ExhibitorAgreements'
 import ExhibitorPromotions, { type ExhibitorPromotion } from './ExhibitorPromotions'
@@ -13,6 +13,8 @@ import ExhibitorInvites, { type SentInvite } from './ExhibitorInvites'
 import ExhibitorAppointments, { type MeetingRequest } from './ExhibitorAppointments'
 import ExhibitorReport from './ExhibitorReport'
 import ExhibitorScan, { type ScanLog } from './ExhibitorScan'
+import ExhibitorBoothQr from './ExhibitorBoothQr'
+import VisitorBoothScan from './VisitorBoothScan'
 import AdminLogin, { type AdminRole } from './AdminLogin'
 import AdminDashboard, { type ActivityLogEntry } from './AdminDashboard'
 import AdminRegistrants from './AdminRegistrants'
@@ -31,10 +33,11 @@ import MyTickets from './MyTickets'
 import type { Ticket } from './TicketCard'
 import VisitorDashboard from './VisitorDashboard'
 import MapAccess from './MapAccess'
+import AccessInfo from './AccessInfo'
 import Participants from './Participants'
 import Panels from './Panels'
 import MyAppointments from './MyAppointments'
-import Notifications from './Notifications'
+import Notifications, { type VisitorNotif, initialVisitorNotifs } from './Notifications'
 import Promotions from './Promotions'
 import { initialPromotions } from './Promotion'
 
@@ -60,6 +63,8 @@ type Step =
   | 'exhibitorAppointments'
   | 'exhibitorReport'
   | 'exhibitorScan'
+  | 'exhibitorBoothQr'
+  | 'visitorScan'
   | 'adminLogin'
   | 'adminDashboard'
   | 'adminRegistrants'
@@ -69,6 +74,7 @@ type Step =
   | 'exhibitorNotifications'
   | 'adminScans'
   | 'map'
+  | 'access'
   | 'participants'
   | 'panels'
   | 'myAppointments'
@@ -93,6 +99,8 @@ const initialMeetingRequests: MeetingRequest[] = [
     agreementNotes: '',
     approvedByStaffName: '',
     approvedAt: null,
+    boothCompany: 'بیمه دانا',
+    createdAt: Date.now() - 3600000 * 5,
   },
   {
     id: 'mr2',
@@ -104,6 +112,8 @@ const initialMeetingRequests: MeetingRequest[] = [
     agreementNotes: '',
     approvedByStaffName: '',
     approvedAt: null,
+    boothCompany: 'کارگزاری آگاه',
+    createdAt: Date.now() - 3600000 * 3,
   },
 ]
 
@@ -141,6 +151,7 @@ function App() {
   const [adminNotificationHistory, setAdminNotificationHistory] = useState<AdminNotificationEntry[]>([])
   const [exhibitorNotificationCredits, setExhibitorNotificationCredits] = useState(3)
   const [exhibitorNotificationHistory, setExhibitorNotificationHistory] = useState<ExhibitorNotificationEntry[]>([])
+  const [visitorNotifications, setVisitorNotifications] = useState<VisitorNotif[]>(initialVisitorNotifs)
   void visitGoals
   void registrationData
 
@@ -167,6 +178,54 @@ function App() {
 
   const logAdminActivity = (action: string) => {
     setAdminActivityLog((prev) => [{ admin: adminDisplayName || 'مدیر', action, time: 'همین الان' }, ...prev])
+  }
+
+  const createMeetingRequestFromScan = (boothCompany: string) => {
+    const newRequest: MeetingRequest = {
+      id: `mr-${Date.now()}`,
+      visitorName: name,
+      visitorCategory: (priorityCategories[0] as CategoryId) || '',
+      description: 'درخواست ملاقات از طریق اسکن QR غرفه',
+      visitorPhone: mobile,
+      status: 'pending',
+      agreementNotes: '',
+      approvedByStaffName: '',
+      approvedAt: null,
+      boothCompany,
+      createdAt: Date.now(),
+    }
+    setMeetingRequests((prev) => [...prev, newRequest])
+    setVisitorNotifications((prev) => [
+      {
+        id: `vn-${Date.now()}`,
+        type: 'request',
+        title: 'درخواست ارسال شد',
+        body: `درخواست ملاقات شما برای غرفه‌ی «${boothCompany}» ارسال شد، منتظر تایید باشید`,
+        time: 'همین الان',
+        read: false,
+      },
+      ...prev,
+    ])
+  }
+
+  const cancelMeetingRequest = (id: string) => {
+    setMeetingRequests((prev) => prev.filter((r) => r.id !== id))
+  }
+
+  const notifyVisitorOnDecision = (request: MeetingRequest, approved: boolean) => {
+    setVisitorNotifications((prev) => [
+      {
+        id: `vn-${Date.now()}`,
+        type: 'approval',
+        title: approved ? 'درخواست شما تایید شد' : 'درخواست شما رد شد',
+        body: approved
+          ? `غرفه‌ی «${request.boothCompany}» درخواست دیدار شما را تایید کرد.`
+          : `غرفه‌ی «${request.boothCompany}» درخواست دیدار شما را رد کرد.`,
+        time: 'همین الان',
+        read: false,
+      },
+      ...prev,
+    ])
   }
 
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
@@ -219,7 +278,7 @@ function App() {
   }
 
   if (step === 'adminScans') {
-    return <AdminScans onBack={() => setStep('adminDashboard')} />
+    return <AdminScans meetingRequests={meetingRequests} onBack={() => setStep('adminDashboard')} />
   }
 
   if (step === 'adminRegistrants') {
@@ -326,7 +385,7 @@ function App() {
       <Registration
         onComplete={(regData) => {
           setRegistrationData(regData)
-          setStep('ticketPurchase')
+          setStep('dashboard')
         }}
         onBack={() => setStep('otp')}
       />
@@ -354,7 +413,7 @@ function App() {
           setPendingPrice(totalPrice)
           setStep('payment')
         }}
-        onBack={() => setStep('registration')}
+        onBack={() => setStep('dashboard')}
       />
     )
   }
@@ -405,10 +464,12 @@ function App() {
         name={name}
         onOpenCard={() => setStep('myTickets')}
         onOpenMap={() => setStep('map')}
+        onOpenAccess={() => setStep('access')}
         onOpenParticipants={() => setStep('participants')}
         onOpenPanels={() => setStep('panels')}
         onOpenMyAppointments={() => setStep('myAppointments')}
         onOpenNotifications={() => setStep('notifications')}
+        onOpenBoothScan={() => setStep('visitorScan')}
         promotions={initialPromotions}
         savedPromotionIds={savedPromotionIds}
         onTogglePromotionSave={togglePromotionSave}
@@ -438,7 +499,24 @@ function App() {
         onOpenReport={() => setStep('exhibitorReport')}
         onOpenScan={() => setStep('exhibitorScan')}
         onOpenNotifications={() => setStep('exhibitorNotifications')}
+        onOpenBoothQr={() => setStep('exhibitorBoothQr')}
         onLogout={handleExhibitorLogout}
+      />
+    )
+  }
+
+  if (step === 'exhibitorBoothQr') {
+    return <ExhibitorBoothQr companyName={exhibitorCompany} onBack={() => setStep('exhibitorHome')} />
+  }
+
+  if (step === 'visitorScan') {
+    return (
+      <VisitorBoothScan
+        visitorName={name}
+        visitorPhone={mobile}
+        meetingRequests={meetingRequests}
+        onCreateRequest={createMeetingRequestFromScan}
+        onBack={() => setStep('dashboard')}
       />
     )
   }
@@ -517,6 +595,7 @@ function App() {
         agreements={agreements}
         setAgreements={setAgreements}
         onOpenAgreements={() => setStep('exhibitorAgreements')}
+        onNotifyVisitor={notifyVisitorOnDecision}
         onBack={() => setStep('exhibitorHome')}
       />
     )
@@ -539,6 +618,10 @@ function App() {
     return <MapAccess onBack={() => setStep('dashboard')} />
   }
 
+  if (step === 'access') {
+    return <AccessInfo onBack={() => setStep('dashboard')} />
+  }
+
   if (step === 'participants') {
     return <Participants onBack={() => setStep('dashboard')} />
   }
@@ -555,6 +638,9 @@ function App() {
   if (step === 'myAppointments') {
     return (
       <MyAppointments
+        visitorPhone={mobile}
+        meetingRequests={meetingRequests}
+        onCancelRequest={cancelMeetingRequest}
         onBack={() => setStep('dashboard')}
         onOpenParticipants={() => setStep('participants')}
         onOpenPanels={() => setStep('panels')}
@@ -574,7 +660,13 @@ function App() {
     )
   }
 
-  return <Notifications onBack={() => setStep('dashboard')} />
+  return (
+    <Notifications
+      notifs={visitorNotifications}
+      setNotifs={setVisitorNotifications}
+      onBack={() => setStep('dashboard')}
+    />
+  )
 }
 
 export default App

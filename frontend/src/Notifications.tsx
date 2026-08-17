@@ -1,10 +1,9 @@
-import { useState } from 'react'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 
-type NotifType = 'approval' | 'reminder' | 'announce'
+export type NotifType = 'approval' | 'reminder' | 'announce' | 'request'
 
-interface Notif {
+export interface VisitorNotif {
   id: string
   type: NotifType
   title: string
@@ -17,9 +16,10 @@ const typeColor: Record<NotifType, string> = {
   approval: '#7d9a86',
   reminder: '#be9c77',
   announce: '#a67c9c',
+  request: '#8a95c9',
 }
 
-const initialNotifs: Notif[] = [
+export const initialVisitorNotifs: VisitorNotif[] = [
   {
     id: 'n1',
     type: 'approval',
@@ -79,6 +79,14 @@ function NotifIcon({ type }: { type: NotifType }) {
       </svg>
     )
   }
+  if (type === 'request') {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={typeColor[type]} strokeWidth="1.8">
+        <path d="M22 2L11 13" />
+        <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+      </svg>
+    )
+  }
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={typeColor[type]} strokeWidth="1.8">
       <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -86,7 +94,7 @@ function NotifIcon({ type }: { type: NotifType }) {
   )
 }
 
-function NotifCard({ notif, onRead }: { notif: Notif; onRead: (id: string) => void }) {
+function NotifCard({ notif, onRead }: { notif: VisitorNotif; onRead: (id: string) => void }) {
   return (
     <div
       onClick={() => onRead(notif.id)}
@@ -118,12 +126,17 @@ function NotifCard({ notif, onRead }: { notif: Notif; onRead: (id: string) => vo
   )
 }
 
-function Notifications({ onBack }: { onBack: () => void }) {
-  const [notifs, setNotifs] = useState<Notif[]>(initialNotifs)
-
+function Notifications({
+  notifs,
+  setNotifs,
+  onBack,
+}: {
+  notifs: VisitorNotif[]
+  setNotifs: React.Dispatch<React.SetStateAction<VisitorNotif[]>>
+  onBack: () => void
+}) {
   const markRead = (id: string) => {
     setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-    // TODO فاز ۳: به‌روزرسانی وضعیت خوانده‌شدن در Supabase
   }
 
   const markAllRead = () => {

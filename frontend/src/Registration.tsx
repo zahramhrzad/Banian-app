@@ -14,6 +14,7 @@ interface RegistrationData {
   education: string
   achievement: string
   skills: string
+  preferredCompanies: string
 }
 
 const emptyData: RegistrationData = {
@@ -27,6 +28,7 @@ const emptyData: RegistrationData = {
   education: '',
   achievement: '',
   skills: '',
+  preferredCompanies: '',
 }
 
 const STEP_LABELS = ['مشخصات', 'فرصت شغلی', 'تایید نهایی']
@@ -303,6 +305,25 @@ export default function Registration({ onComplete, onBack }: RegistrationProps) 
                   className={inputClass}
                   style={{ color: '#1b2134' }}
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5 mt-1">
+                <span className="text-[10.5px] font-semibold text-white px-0.5">
+                  مایل به همکاری با کدام شرکت‌ها یا سازمان‌ها هستید؟
+                </span>
+                <div className={fieldClass} style={{ alignItems: 'flex-start' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9b9baf" strokeWidth="1.8" className="mt-0.5 flex-shrink-0">
+                    <rect x="3" y="4" width="18" height="16" rx="2" />
+                    <path d="M3 10h18" />
+                  </svg>
+                  <textarea
+                    value={data.preferredCompanies}
+                    onChange={(e) => update({ preferredCompanies: e.target.value })}
+                    placeholder="مثلاً: بانک آینده، کارگزاری آگاه..."
+                    className={inputClass + ' resize-none'}
+                    style={{ color: '#1b2134', minHeight: '40px' }}
+                  />
+                </div>
               </div>
             </div>
           )}

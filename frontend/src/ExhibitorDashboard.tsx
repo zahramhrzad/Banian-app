@@ -34,6 +34,7 @@ interface ExhibitorDashboardProps {
   onOpenReport: () => void
   onOpenScan: () => void
   onOpenNotifications: () => void
+  onOpenBoothQr: () => void
   onLogout: () => void
 }
 
@@ -55,6 +56,7 @@ export default function ExhibitorDashboard({
   onOpenReport,
   onOpenScan,
   onOpenNotifications,
+  onOpenBoothQr,
   onLogout,
 }: ExhibitorDashboardProps) {
   const cat = productCategoryInfo(activityCategory as CategoryId)
@@ -261,6 +263,14 @@ export default function ExhibitorDashboard({
           style={{ ...groupCardStyle, cursor: 'pointer' }}
         >
           <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>ثبت اسکن بازدیدکننده</span>
+        </button>
+
+        <button
+          onClick={onOpenBoothQr}
+          className="w-full rounded-2xl p-3 mb-3 text-right"
+          style={{ ...groupCardStyle, cursor: 'pointer' }}
+        >
+          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>نمایش QR غرفه</span>
         </button>
 
         <button

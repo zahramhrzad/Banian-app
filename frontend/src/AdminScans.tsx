@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 import { categoryInfo, type CategoryId } from './ExhibitorProducts'
+import type { MeetingRequest } from './ExhibitorAppointments'
 
-type Tab = 'scans' | 'agreements'
+type Tab = 'scans' | 'agreements' | 'requests'
 type AgreementStatus = 'negotiating' | 'signed' | 'cancelled'
 type DateRangeFilter = 'all' | 'today' | 'week' | 'custom'
 
@@ -49,6 +50,12 @@ const statusInfo: Record<AgreementStatus, { label: string; bg: string; text: str
   cancelled: { label: 'لغو شده', bg: 'rgba(217,83,79,0.12)', text: '#c76b5f' },
 }
 
+const requestStatusInfo: Record<'pending' | 'approved' | 'declined', { label: string; bg: string; text: string }> = {
+  pending: { label: 'در انتظار تایید', bg: 'rgba(190,156,119,0.18)', text: '#8a6d4d' },
+  approved: { label: 'تاییدشده', bg: '#e3f0e0', text: '#3f6b4d' },
+  declined: { label: 'رد شده', bg: 'rgba(217,83,79,0.12)', text: '#c76b5f' },
+}
+
 const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
 
 function formatDateTime(ts: number) {
@@ -64,7 +71,7 @@ function isSameDay(ts: number, ref: number) {
 
 function downloadCsv(filename: string, rows: string[][]) {
   const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -73,7 +80,13 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url)
 }
 
-export default function AdminScans({ onBack }: { onBack: () => void }) {
+export default function AdminScans({
+  meetingRequests,
+  onBack,
+}: {
+  meetingRequests: MeetingRequest[]
+  onBack: () => void
+}) {
   const [tab, setTab] = useState<Tab>('scans')
   const [search, setSearch] = useState('')
   const [exhibitorFilter, setExhibitorFilter] = useState('')
@@ -82,9 +95,13 @@ export default function AdminScans({ onBack }: { onBack: () => void }) {
   const [customEnd, setCustomEnd] = useState('')
 
   const exhibitorOptions = useMemo(() => {
-    const names = new Set([...mockScans.map((s) => s.exhibitorCompany), ...mockAgreements.map((a) => a.exhibitorCompany)])
+    const names = new Set([
+      ...mockScans.map((s) => s.exhibitorCompany),
+      ...mockAgreements.map((a) => a.exhibitorCompany),
+      ...meetingRequests.map((r) => r.boothCompany).filter(Boolean),
+    ])
     return Array.from(names)
-  }, [])
+  }, [meetingRequests])
 
   const inDateRange = (ts: number) => {
     if (dateRange === 'all') return true
@@ -135,6 +152,13 @@ export default function AdminScans({ onBack }: { onBack: () => void }) {
       inDateRange(a.date)
   )
 
+  const filteredRequests = meetingRequests.filter(
+    (r) =>
+      (search.trim() === '' || r.visitorName.includes(search.trim()) || r.boothCompany.includes(search.trim())) &&
+      (exhibitorFilter === '' || r.boothCompany === exhibitorFilter) &&
+      inDateRange(r.createdAt)
+  )
+
   const scansByExhibitor = useMemo(() => {
     const counts: Record<string, number> = {}
     filteredScans.forEach((s) => {
@@ -150,10 +174,15 @@ export default function AdminScans({ onBack }: { onBack: () => void }) {
         ['کد بلیط', 'غرفه', 'اسکن‌کننده', 'روش', 'زمان'],
         ...filteredScans.map((s) => [s.ticketCode, s.exhibitorCompany, s.staffName, s.method === 'camera' ? 'دوربین' : 'دستی', formatDateTime(s.scannedAt)]),
       ])
-    } else {
+    } else if (tab === 'agreements') {
       downloadCsv('agreements.csv', [
         ['طرف قرارداد', 'غرفه', 'موضوع', 'مکان', 'وضعیت', 'تاییدکننده', 'تاریخ'],
         ...filteredAgreements.map((a) => [a.partnerName, a.exhibitorCompany, a.topic, a.location, statusInfo[a.status].label, a.approvedByStaffName, formatDateTime(a.date)]),
+      ])
+    } else {
+      downloadCsv('meeting-requests.csv', [
+        ['بازدیدکننده', 'غرفه', 'وضعیت', 'تلفن بازدیدکننده', 'تاریخ ثبت'],
+        ...filteredRequests.map((r) => [r.visitorName, r.boothCompany, requestStatusInfo[r.status].label, r.visitorPhone, formatDateTime(r.createdAt)]),
       ])
     }
   }
@@ -174,7 +203,7 @@ export default function AdminScans({ onBack }: { onBack: () => void }) {
       <div className="relative z-10 mt-6">
         <PageTitle>افراد و قرارهای اسکن‌شده</PageTitle>
 
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-3 flex-wrap">
           <button
             onClick={() => { setTab('scans'); setSearch('') }}
             className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
@@ -189,12 +218,19 @@ export default function AdminScans({ onBack }: { onBack: () => void }) {
           >
             توافقات نمایشگاه ({toFa(mockAgreements.length)})
           </button>
+          <button
+            onClick={() => { setTab('requests'); setSearch('') }}
+            className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
+            style={{ background: tab === 'requests' ? '#be9c77' : 'rgba(255,255,255,0.06)', color: tab === 'requests' ? '#1b2134' : '#9b9baf', border: 'none', cursor: 'pointer' }}
+          >
+            درخواست‌های قرار ({toFa(meetingRequests.length)})
+          </button>
         </div>
 
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={tab === 'scans' ? 'جست‌وجوی کد بلیط، غرفه یا عضو تیم' : 'جست‌وجوی نام طرف قرارداد یا غرفه'}
+          placeholder={tab === 'scans' ? 'جست‌وجوی کد بلیط، غرفه یا عضو تیم' : tab === 'agreements' ? 'جست‌وجوی نام طرف قرارداد یا غرفه' : 'جست‌وجوی نام بازدیدکننده یا غرفه'}
           className="w-full bg-white rounded-xl px-3.5 py-2.5 text-xs outline-none mb-2.5"
           style={{ color: '#1b2134' }}
         />
@@ -308,9 +344,44 @@ export default function AdminScans({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        <div className="text-[8px] text-center mt-4" style={{ color: '#6f6e78' }}>
-          داده‌ی نمونه — بعد از اتصال دیتابیس واقعی، اطلاعات همه‌ی غرفه‌ها به‌صورت زنده نمایش داده می‌شود
-        </div>
+        {tab === 'requests' && (
+          <div className="flex flex-col gap-2.5">
+            {filteredRequests.length === 0 && <p className="text-[11px] text-center py-6" style={{ color: '#9b9baf' }}>موردی پیدا نشد</p>}
+            {filteredRequests.map((r) => {
+              const st = requestStatusInfo[r.status]
+              const cat = categoryInfo(r.visitorCategory)
+              return (
+                <div key={r.id} className="bg-white rounded-2xl p-3.5">
+                  <div className="flex justify-between items-start mb-1.5">
+                    <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                    <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: st.bg, color: st.text }}>{st.label}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    <span className="text-[8px]" style={{ color: '#9b9baf' }}>غرفه: {r.boothCompany}</span>
+                    {cat && <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: cat.color, color: cat.text }}>{cat.label}</span>}
+                  </div>
+                  <div className="text-[9px]" style={{ color: '#9b9baf' }}>{r.description}</div>
+                  <div className="flex gap-2.5 mt-2 text-[8px] flex-wrap" style={{ color: '#8a6d4d' }}>
+                    <span dir="ltr">{r.visitorPhone}</span>
+                    {r.status === 'approved' && r.approvedByStaffName && <span>تاییدکننده: {r.approvedByStaffName}</span>}
+                    <span>{formatDateTime(r.createdAt)}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {tab !== 'requests' && (
+          <div className="text-[8px] text-center mt-4" style={{ color: '#6f6e78' }}>
+            داده‌ی نمونه — بعد از اتصال دیتابیس واقعی، اطلاعات همه‌ی غرفه‌ها به‌صورت زنده نمایش داده می‌شود
+          </div>
+        )}
+        {tab === 'requests' && (
+          <div className="text-[8px] text-center mt-4" style={{ color: '#6f6e78' }}>
+            این تب داده‌ی زنده‌ست — همون درخواست‌هایی که از اسکن QR غرفه ثبت می‌شن
+          </div>
+        )}
       </div>
     </div>
   )

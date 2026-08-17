@@ -11,12 +11,25 @@ function MobileLogin({
 }) {
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
+  const [mobileTouched, setMobileTouched] = useState(false)
   const [hovered, setHovered] = useState(false)
 
   const glowShadow =
     '0 0 8px 2px rgba(190,156,119,0.5), 0 0 22px 6px rgba(190,156,119,0.35)'
 
-  const isValid = name.trim() !== '' && mobile.trim() !== ''
+  const isMobileValid = /^9\d{9}$/.test(mobile)
+  const isValid = name.trim() !== '' && isMobileValid
+
+  const handleMobileChange = (raw: string) => {
+    let digits = raw.replace(/\D/g, '')
+    if (digits.startsWith('0')) {
+      digits = digits.slice(1)
+    }
+    digits = digits.slice(0, 10)
+    setMobile(digits)
+  }
+
+  const showMobileError = mobileTouched && mobile.length > 0 && !isMobileValid
 
   return (
     <div
@@ -55,24 +68,42 @@ function MobileLogin({
           style={{ color: '#1b2134' }}
         />
 
-        <div className="bg-white rounded-xl flex items-center gap-2 px-4 mb-5" dir="ltr">
+        <div
+          className="bg-white rounded-xl flex items-center gap-2 px-4"
+          dir="ltr"
+          style={{
+            boxShadow: showMobileError ? '0 0 0 1.5px #d9534f' : 'none',
+          }}
+        >
           <span className="text-sm" style={{ color: '#9b9baf' }}>+98</span>
           <div className="w-px h-5" style={{ background: '#e0e0e0' }}></div>
           <input
             type="tel"
+            inputMode="numeric"
             value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
+            onChange={(e) => handleMobileChange(e.target.value)}
+            onBlur={() => setMobileTouched(true)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && isValid) onSubmit(name, mobile)
             }}
             placeholder="912 345 6789"
+            maxLength={10}
             className="flex-1 py-3.5 px-1 text-sm outline-none border-none"
             style={{ color: '#1b2134' }}
           />
         </div>
 
+        <div className="mb-5 mt-1.5 px-1" style={{ minHeight: '16px' }}>
+          {showMobileError && (
+            <span className="text-xs" style={{ color: '#e17a76' }}>
+              شماره موبایل معتبر نیست (باید ۱۰ رقم و با ۹ شروع شود)
+            </span>
+          )}
+        </div>
+
         <button
           onClick={() => {
+            setMobileTouched(true)
             if (!isValid) return
             onSubmit(name, mobile)
           }}

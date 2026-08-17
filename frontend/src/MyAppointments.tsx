@@ -1,41 +1,37 @@
-import { useState } from 'react';
-import BackButton from './BackButton';
+import { useState, useMemo } from 'react'
+import BackButton from './BackButton'
+import type { MeetingRequest } from './ExhibitorAppointments'
 
-type BoothStatus = 'requested' | 'accepted' | 'done';
+type BoothStatus = 'requested' | 'accepted' | 'done' | 'declined'
 
-interface AppointmentItem {
-  id: string;
-  type: 'booth' | 'panel';
-  title: string;
-  sub: string;
-  status: BoothStatus | 'saved';
-  time?: string; // فقط برای panel، برای مرتب‌سازی زمانی
-  noteBefore: string;
-  noteAfter: string;
+interface PanelItem {
+  id: string
+  type: 'panel'
+  title: string
+  sub: string
+  status: 'saved'
+  time: string
 }
+
+type ListItem =
+  | { id: string; type: 'booth'; title: string; sub: string; status: BoothStatus; time?: undefined }
+  | PanelItem
 
 const boothStatusLabel: Record<BoothStatus, string> = {
   requested: 'درخواست‌شده',
   accepted: 'تایید‌شده',
   done: 'انجام‌شده',
-};
+  declined: 'رد شده',
+}
 
 const boothStatusColor: Record<BoothStatus, string> = {
   requested: '#be9c77',
   accepted: '#7d9a86',
   done: '#9b9baf',
-};
+  declined: '#c76b5f',
+}
 
-const initialData: AppointmentItem[] = [
-  {
-    id: 'a1',
-    type: 'booth',
-    title: 'بانک آینده',
-    sub: 'سالن B - غرفه ۱۲',
-    status: 'requested',
-    noteBefore: '',
-    noteAfter: '',
-  },
+const initialPanelItems: PanelItem[] = [
   {
     id: 'a2',
     type: 'panel',
@@ -43,8 +39,6 @@ const initialData: AppointmentItem[] = [
     sub: 'روز دوم - سالن ب',
     status: 'saved',
     time: '۱۰:۰۰',
-    noteBefore: '',
-    noteAfter: '',
   },
   {
     id: 'a3',
@@ -53,74 +47,98 @@ const initialData: AppointmentItem[] = [
     sub: 'روز دوم - سالن ب',
     status: 'saved',
     time: '۱۲:۰۰',
-    noteBefore: '',
-    noteAfter: '',
   },
-];
+]
 
 interface MyAppointmentsProps {
-  onBack: () => void;
-  onOpenParticipants?: () => void;
-  onOpenPanels?: () => void;
+  visitorPhone: string
+  meetingRequests: MeetingRequest[]
+  onCancelRequest: (id: string) => void
+  onBack: () => void
+  onOpenParticipants?: () => void
+  onOpenPanels?: () => void
 }
 
-export default function MyAppointments({ onBack, onOpenParticipants, onOpenPanels }: MyAppointmentsProps) {
-  const [items, setItems] = useState<AppointmentItem[]>(initialData);
-  const [filter, setFilter] = useState<'all' | 'booth' | 'panel'>('all');
-  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
-  const [draftBefore, setDraftBefore] = useState('');
-  const [draftAfter, setDraftAfter] = useState('');
+export default function MyAppointments({
+  visitorPhone,
+  meetingRequests,
+  onCancelRequest,
+  onBack,
+  onOpenParticipants,
+  onOpenPanels,
+}: MyAppointmentsProps) {
+  const [panelItems, setPanelItems] = useState<PanelItem[]>(initialPanelItems)
+  const [filter, setFilter] = useState<'all' | 'booth' | 'panel'>('all')
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null)
+  const [draftBefore, setDraftBefore] = useState('')
+  const [draftAfter, setDraftAfter] = useState('')
+  const [notesMap, setNotesMap] = useState<Record<string, { before: string; after: string }>>({})
+
+  const boothItems: ListItem[] = useMemo(() => {
+    return meetingRequests
+      .filter((r) => r.visitorPhone === visitorPhone)
+      .map((r) => ({
+        id: r.id,
+        type: 'booth' as const,
+        title: r.boothCompany || 'غرفه',
+        sub: r.description || 'درخواست ملاقات از طریق اسکن QR غرفه',
+        status: (r.status === 'pending' ? 'requested' : r.status === 'approved' ? 'accepted' : 'declined') as BoothStatus,
+      }))
+  }, [meetingRequests, visitorPhone])
+
+  const items: ListItem[] = [...boothItems, ...panelItems]
 
   const counts = {
     all: items.length,
-    booth: items.filter((i) => i.type === 'booth').length,
-    panel: items.filter((i) => i.type === 'panel').length,
-  };
+    booth: boothItems.length,
+    panel: panelItems.length,
+  }
 
-  let filtered = items.filter((i) => filter === 'all' || i.type === filter);
+  let filtered = items.filter((i) => filter === 'all' || i.type === filter)
 
-  // نشست‌ها (panel) بر اساس ساعت مرتب می‌شن؛ غرفه‌ها (booth) چون ساعت مشخص ندارن، همون ترتیب اولیه می‌مونن
+  // نشست‌ها (panel) بر اساس ساعت مرتب می‌شن؛ غرفه‌ها (booth) همون ترتیب اولیه می‌مونن
   filtered = [...filtered].sort((a, b) => {
     if (a.type === 'panel' && b.type === 'panel') {
-      return (a.time || '').localeCompare(b.time || '');
+      return (a.time || '').localeCompare(b.time || '')
     }
-    if (a.type === 'booth' && b.type === 'panel') return -1;
-    if (a.type === 'panel' && b.type === 'booth') return 1;
-    return 0;
-  });
+    if (a.type === 'booth' && b.type === 'panel') return -1
+    if (a.type === 'panel' && b.type === 'booth') return 1
+    return 0
+  })
 
-  const openNotes = (item: AppointmentItem) => {
+  const openNotes = (item: ListItem) => {
     if (openNoteId === item.id) {
-      setOpenNoteId(null);
-      return;
+      setOpenNoteId(null)
+      return
     }
-    setOpenNoteId(item.id);
-    setDraftBefore(item.noteBefore);
-    setDraftAfter(item.noteAfter);
-  };
+    setOpenNoteId(item.id)
+    const existing = notesMap[item.id]
+    setDraftBefore(existing?.before || '')
+    setDraftAfter(existing?.after || '')
+  }
 
   const saveNote = (id: string) => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, noteBefore: draftBefore, noteAfter: draftAfter } : i))
-    );
-    // TODO فاز ۳: ذخیره‌ی واقعی توی جدول appointment_notes با phase مربوطه
-    setOpenNoteId(null);
-  };
+    setNotesMap((prev) => ({ ...prev, [id]: { before: draftBefore, after: draftAfter } }))
+    setOpenNoteId(null)
+  }
 
-  const cancelAppointment = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    // TODO فاز ۳: حذف/تغییر وضعیت واقعی رکورد appointments در Supabase
-  };
+  const cancelAppointment = (item: ListItem) => {
+    if (item.type === 'booth') {
+      onCancelRequest(item.id)
+      return
+    }
+    setPanelItems((prev) => prev.filter((i) => i.id !== item.id))
+  }
 
-  const statusLabel = (item: AppointmentItem) => {
-    if (item.type === 'booth') return boothStatusLabel[item.status as BoothStatus];
-    return 'ذخیره‌شده';
-  };
+  const statusLabel = (item: ListItem) => {
+    if (item.type === 'booth') return boothStatusLabel[item.status]
+    return 'ذخیره‌شده'
+  }
 
-  const statusColor = (item: AppointmentItem) => {
-    if (item.type === 'booth') return boothStatusColor[item.status as BoothStatus];
-    return '#9b9baf';
-  };
+  const statusColor = (item: ListItem) => {
+    if (item.type === 'booth') return boothStatusColor[item.status]
+    return '#9b9baf'
+  }
 
   return (
     <div
@@ -138,7 +156,6 @@ export default function MyAppointments({ onBack, onOpenParticipants, onOpenPanel
           قرارهای من
         </div>
 
-        {/* تب‌های نوع */}
         <div className="flex gap-1.5 mb-4">
           <button
             onClick={() => setFilter('all')}
@@ -163,14 +180,13 @@ export default function MyAppointments({ onBack, onOpenParticipants, onOpenPanel
           </button>
         </div>
 
-        {/* لیست یا حالت خالی */}
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl px-4 py-6 text-center">
             <div className="text-xs font-bold mb-1.5" style={{ color: '#1b2134' }}>
               هنوز قراری ثبت نکردی
             </div>
             <div className="text-[10.5px] mb-3.5" style={{ color: '#9b9baf' }}>
-              با ذخیره‌ی شرکت‌ها یا نشست‌ها، اینجا نشون داده می‌شن
+              با اسکن QR غرفه‌ها یا ذخیره‌ی نشست‌ها، اینجا نشون داده می‌شن
             </div>
             <div className="flex gap-2 justify-center">
               <button
@@ -192,9 +208,10 @@ export default function MyAppointments({ onBack, onOpenParticipants, onOpenPanel
         ) : (
           <div className="flex flex-col gap-2.5">
             {filtered.map((item) => {
-              const hasAnyNote = item.noteBefore || item.noteAfter;
-              const canCancel = item.type === 'booth' && item.status === 'requested';
-              const isNoteOpen = openNoteId === item.id;
+              const note = notesMap[item.id]
+              const hasAnyNote = note?.before || note?.after
+              const canCancel = item.type === 'booth' && item.status === 'requested'
+              const isNoteOpen = openNoteId === item.id
 
               return (
                 <div key={item.id} className="bg-white rounded-2xl px-3.5 py-3">
@@ -224,16 +241,16 @@ export default function MyAppointments({ onBack, onOpenParticipants, onOpenPanel
 
                   {hasAnyNote && !isNoteOpen && (
                     <div className="mt-2 flex flex-col gap-1.5">
-                      {item.noteBefore && (
+                      {note?.before && (
                         <div className="rounded-lg px-2.5 py-1.5" style={{ background: '#f7f5f1' }}>
                           <span className="text-[9px] font-bold" style={{ color: '#b3833f' }}>قبل از دیدار: </span>
-                          <span className="text-[10.5px]" style={{ color: '#5b5347' }}>{item.noteBefore}</span>
+                          <span className="text-[10.5px]" style={{ color: '#5b5347' }}>{note.before}</span>
                         </div>
                       )}
-                      {item.noteAfter && (
+                      {note?.after && (
                         <div className="rounded-lg px-2.5 py-1.5" style={{ background: '#f7f5f1' }}>
                           <span className="text-[9px] font-bold" style={{ color: '#7d9a86' }}>بعد از دیدار: </span>
-                          <span className="text-[10.5px]" style={{ color: '#5b5347' }}>{item.noteAfter}</span>
+                          <span className="text-[10.5px]" style={{ color: '#5b5347' }}>{note.after}</span>
                         </div>
                       )}
                     </div>
@@ -242,7 +259,7 @@ export default function MyAppointments({ onBack, onOpenParticipants, onOpenPanel
                   <div className="flex justify-between items-center mt-2 pt-2" style={{ borderTop: '1px solid #f0ede6' }}>
                     {canCancel ? (
                       <button
-                        onClick={() => cancelAppointment(item.id)}
+                        onClick={() => cancelAppointment(item)}
                         className="flex items-center gap-1 text-[10px]"
                         style={{ color: '#c76b5f' }}
                       >
@@ -301,11 +318,11 @@ export default function MyAppointments({ onBack, onOpenParticipants, onOpenPanel
                     </div>
                   )}
                 </div>
-              );
+              )
             })}
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }
