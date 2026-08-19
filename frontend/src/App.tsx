@@ -174,6 +174,7 @@ function App() {
   const [qualityFormStatus, setQualityFormStatus] = useState<Record<string, boolean>>({})
   const [exhibitorInboxNotifs, setExhibitorInboxNotifs] = useState<Record<string, ExhibitorInboxNotif[]>>({})
   const [lastReminderLabel, setLastReminderLabel] = useState<Record<string, string>>({})
+  const [notificationPrefill, setNotificationPrefill] = useState('')
   void visitGoals
   void registrationData
 
@@ -238,6 +239,11 @@ function App() {
       ...prev,
       [exhibitorCompany]: (prev[exhibitorCompany] || []).map((n) => ({ ...n, read: true })),
     }))
+  }
+
+  const openNotificationsForPanel = (message: string) => {
+    setNotificationPrefill(message)
+    setStep('exhibitorNotifications')
   }
 
   const createMeetingRequestFromScan = (boothCompany: string) => {
@@ -387,6 +393,7 @@ function App() {
         recipientsPerCredit={notificationCreditRate}
         history={exhibitorNotificationHistory}
         setHistory={setExhibitorNotificationHistory}
+        initialMessage={notificationPrefill}
         onBack={() => setStep('exhibitorHome')}
       />
     )
@@ -578,7 +585,10 @@ function App() {
         onOpenAppointments={() => setStep('exhibitorAppointments')}
         onOpenReport={() => setStep('exhibitorReport')}
         onOpenScan={() => setStep('exhibitorScan')}
-        onOpenNotifications={() => setStep('exhibitorNotifications')}
+        onOpenNotifications={() => {
+          setNotificationPrefill('')
+          setStep('exhibitorNotifications')
+        }}
         onOpenBoothQr={() => setStep('exhibitorBoothQr')}
         onLogout={handleExhibitorLogout}
       />
@@ -638,6 +648,7 @@ function App() {
       <ExhibitorPanels
         sessions={panels}
         setSessions={setPanels}
+        onSendNotification={openNotificationsForPanel}
         onBack={() => setStep('exhibitorHome')}
       />
     )

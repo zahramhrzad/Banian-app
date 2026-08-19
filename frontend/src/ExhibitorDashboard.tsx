@@ -260,7 +260,7 @@ export default function ExhibitorDashboard({
             </div>
           </div>
           <div className="text-[7.5px] mt-2.5" style={{ color: '#6f6e78' }}>
-            داده‌ی نمونه — بعد از اتصال اسکنر QR خودکار محاسبه می‌شود
+            این درصدها نشان‌دهنده‌ی حوزه‌ی فعالیت بازدیدکنندگانی است که از غرفه بازدید کرده‌اند — داده‌ی نمونه، بعد از اتصال اسکنر QR خودکار محاسبه می‌شود
           </div>
         </div>
 
@@ -270,11 +270,11 @@ export default function ExhibitorDashboard({
             <div className="text-base font-extrabold" style={{ color: '#fff' }}>{toFa(products.length)}</div>
           </div>
           <div className="rounded-xl p-2.5" style={groupCardStyle}>
-            <div className="text-[8px]" style={{ color: '#8b8a95' }}>پنل پیش‌رو</div>
+            <div className="text-[8px] leading-relaxed" style={{ color: '#8b8a95' }}>پنل‌ها یا همایش‌های پیش‌رو</div>
             <div className="text-base font-extrabold" style={{ color: '#fff' }}>{toFa(upcomingPanelsCount)}</div>
           </div>
           <div className="rounded-xl p-2.5" style={groupCardStyle}>
-            <div className="text-[8px]" style={{ color: '#8b8a95' }}>قرارداد</div>
+            <div className="text-[8px] leading-relaxed" style={{ color: '#8b8a95' }}>قرارداد یا تفاهم‌نامه‌های رونمایی‌شده</div>
             <div className="text-base font-extrabold" style={{ color: '#fff' }}>{toFa(agreements.length)}</div>
           </div>
           <div className="rounded-xl p-2.5" style={groupCardStyle}>

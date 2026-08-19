@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 import { DAYS } from './ExhibitorPanels'
@@ -13,6 +15,12 @@ const mockDailyVisits = [
   { dayId: 2, count: 142 },
   { dayId: 3, count: 156 },
   { dayId: 4, count: 116 },
+]
+const mockCategoryBreakdown = [
+  { label: 'بانک', color: '#be9c77', percent: 45 },
+  { label: 'بیمه', color: '#7d9a86', percent: 28 },
+  { label: 'بازار سرمایه', color: '#c9a15e', percent: 17 },
+  { label: 'زیرساخت', color: '#8d7aa3', percent: 10 },
 ]
 const mockGenderSplit = { male: 58, female: 42 }
 const mockAgeSplit = [
@@ -56,6 +64,8 @@ export default function ExhibitorReport({
   onBack: () => void
 }) {
   const [copied, setCopied] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
 
   const status = exhibitionStatus()
   const totalVisits = mockDailyVisits.reduce((sum, d) => sum + d.count, 0)
@@ -100,6 +110,27 @@ export default function ExhibitorReport({
     }
   }
 
+  const handleDownloadPdf = async () => {
+    const el = reportRef.current
+    if (!el) return
+    setDownloadingPdf(true)
+    try {
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#1b2134' })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height],
+      })
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+      pdf.save(`banian-report-${exhibitorCode || 'exhibitor'}.pdf`)
+    } catch (err) {
+      console.error('PDF generation failed', err)
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
+
   const cardStyle = {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.05)',
@@ -117,6 +148,7 @@ export default function ExhibitorReport({
       ></div>
 
       <div className="relative z-10 mt-6">
+        <div ref={reportRef}>
         <PageTitle>گزارش نهایی غرفه</PageTitle>
 
         <div className="rounded-2xl p-4 mb-3" style={cardStyle}>
@@ -151,8 +183,8 @@ export default function ExhibitorReport({
         </div>
 
         <div className="rounded-2xl p-4 mb-3" style={cardStyle}>
-          <div className="text-[9.5px] font-bold mb-2.5" style={{ color: '#e8cfa8' }}>روند بازدید روزانه</div>
-          <div className="flex items-end gap-2.5" style={{ height: '70px' }}>
+          <div className="text-[9.5px] font-bold mb-2.5" style={{ color: '#e8cfa8' }}>روند بازدید روزانه به تفکیک حوزه‌ی فعالیت</div>
+          <div className="flex items-end gap-2.5" style={{ height: '90px' }}>
             {mockDailyVisits.map((d) => {
               const day = DAYS.find((dd) => dd.id === d.dayId)
               const heightPercent = (d.count / maxDaily) * 100
@@ -160,16 +192,28 @@ export default function ExhibitorReport({
                 <div key={d.dayId} className="flex-1 flex flex-col items-center justify-end h-full">
                   <span className="text-[8px] font-bold mb-1" style={{ color: '#fff' }}>{toFa(d.count)}</span>
                   <div
-                    className="w-full rounded-t-md"
-                    style={{ height: `${heightPercent}%`, background: '#be9c77', minHeight: '4px' }}
-                  ></div>
+                    className="w-full rounded-t-md overflow-hidden flex flex-col-reverse"
+                    style={{ height: `${heightPercent}%`, minHeight: '4px' }}
+                  >
+                    {mockCategoryBreakdown.map((seg) => (
+                      <div key={seg.label} style={{ height: `${seg.percent}%`, background: seg.color }}></div>
+                    ))}
+                  </div>
                   <span className="text-[7px] mt-1.5" style={{ color: '#8b8a95' }}>{day?.label}</span>
                 </div>
               )
             })}
           </div>
-          <div className="text-[7.5px] mt-3" style={{ color: '#6f6e78' }}>
-            داده‌ی نمونه — بعد از اتصال اسکنر QR واقعی محاسبه می‌شود
+          <div className="flex flex-wrap gap-3 mt-3">
+            {mockCategoryBreakdown.map((seg) => (
+              <span key={seg.label} className="flex items-center gap-1 text-[7.5px]" style={{ color: '#9b9baf' }}>
+                <span className="rounded-sm inline-block" style={{ width: '7px', height: '7px', background: seg.color }}></span>
+                {seg.label}
+              </span>
+            ))}
+          </div>
+          <div className="text-[7.5px] mt-2.5" style={{ color: '#6f6e78' }}>
+            داده‌ی نمونه — بعد از اتصال اسکنر QR واقعی، روند واقعی روزانه به تفکیک حوزه‌ی فعالیت بازدیدکنندگان محاسبه می‌شود
           </div>
         </div>
 
@@ -262,14 +306,21 @@ export default function ExhibitorReport({
             ))}
           </div>
         </div>
+        </div>
 
         <div className="flex gap-2">
           <button
-            onClick={() => window.print()}
-            className="flex-1 rounded-full py-3 font-bold text-xs"
-            style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="flex-1 rounded-full py-3 font-bold text-xs flex items-center justify-center gap-1.5"
+            style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: downloadingPdf ? 'default' : 'pointer' }}
           >
-            چاپ / خروجی گزارش
+            {!downloadingPdf && (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1b2134" strokeWidth="2">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" />
+              </svg>
+            )}
+            {downloadingPdf ? 'در حال آماده‌سازی...' : 'دانلود PDF گزارش'}
           </button>
           <button
             onClick={handleCopy}

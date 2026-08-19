@@ -63,13 +63,45 @@ export function isPast(dayId: number) {
   return Date.now() > day.realDate.getTime() + 24 * 60 * 60 * 1000
 }
 
+const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
+const toEnglishDigits = (str: string) => str.replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+
+function sessionStartDate(s: PanelSession): Date | null {
+  const day = DAYS.find((d) => d.id === s.dayId)
+  if (!day) return null
+  const match = toEnglishDigits(s.time).match(/(\d{1,2})[:.](\d{2})/)
+  const start = new Date(day.realDate)
+  if (match) {
+    start.setHours(Number(match[1]), Number(match[2]), 0, 0)
+  } else {
+    start.setHours(9, 0, 0, 0)
+  }
+  return start
+}
+
+// برچسب شمارنده‌ی معکوس برای پنل‌های پیش رو؛ اگر ساعت پنل قابل تشخیص نباشد، بر اساس ساعت ۹ صبح همان روز محاسبه می‌شود
+function countdownLabel(s: PanelSession): string | null {
+  const start = sessionStartDate(s)
+  if (!start) return null
+  const diffMs = start.getTime() - Date.now()
+  if (diffMs <= 0) return null
+  const diffMin = Math.round(diffMs / 60000)
+  if (diffMin < 60) return `شروع تا ${toFa(diffMin)} دقیقه دیگر`
+  const diffHours = Math.round(diffMin / 60)
+  if (diffHours < 24) return `شروع تا ${toFa(diffHours)} ساعت دیگر`
+  const diffDays = Math.round(diffHours / 24)
+  return `شروع تا ${toFa(diffDays)} روز دیگر`
+}
+
 export default function ExhibitorPanels({
   sessions,
   setSessions,
+  onSendNotification,
   onBack,
 }: {
   sessions: PanelSession[]
   setSessions: React.Dispatch<React.SetStateAction<PanelSession[]>>
+  onSendNotification: (message: string) => void
   onBack: () => void
 }) {
   const [showForm, setShowForm] = useState(false)
@@ -166,6 +198,12 @@ export default function ExhibitorPanels({
     return d ? `${d.label} (${d.date})` : ''
   }
 
+  const notifyAboutSession = (s: PanelSession) => {
+    onSendNotification(
+      `پنل «${s.title}» در ${dayLabel(s.dayId)} ساعت ${s.time} در ${s.location} برگزار می‌شود. منتظر حضور شما هستیم.`
+    )
+  }
+
   return (
     <div
       className="min-h-screen flex flex-col relative overflow-hidden px-6 py-8"
@@ -192,6 +230,7 @@ export default function ExhibitorPanels({
               {sessions.map((s) => {
                 const cat = categoryInfo(s.category)
                 const past = isPast(s.dayId)
+                const countdown = !past ? countdownLabel(s) : null
                 return (
                   <div key={s.id} className="bg-white rounded-2xl p-3.5">
                     <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -232,6 +271,12 @@ export default function ExhibitorPanels({
                       <span>{s.location}</span>
                     </div>
 
+                    {countdown && (
+                      <div className="mt-1 text-[8.5px] font-bold" style={{ color: '#be9c77' }}>
+                        {countdown}
+                      </div>
+                    )}
+
                     {past && (
                       <div className="mt-2.5 pt-2.5" style={{ borderTop: '1px solid #f0ede6' }}>
                         <input
@@ -259,6 +304,13 @@ export default function ExhibitorPanels({
                         {s.published ? '● منتشر شده' : '○ پیش‌نویس'}
                       </button>
                       <div className="flex items-center gap-2.5">
+                        <button
+                          onClick={() => notifyAboutSession(s)}
+                          className="text-[9.5px] underline"
+                          style={{ color: '#7d9a86', background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                          اعلان
+                        </button>
                         <button
                           onClick={() => openEditForm(s)}
                           className="text-[9.5px] underline"
@@ -353,7 +405,7 @@ export default function ExhibitorPanels({
               <textarea
                 value={form.topic}
                 onChange={(e) => setForm((prev) => ({ ...prev, topic: e.target.value }))}
-                placeholder="موضوع / توضیحات"
+                placeholder="موضوع و محتوای پنل یا همایش را اینجا بنویسید"
                 className={inputClass + ' resize-none'}
                 style={{ color: '#1b2134', minHeight: '44px' }}
               />

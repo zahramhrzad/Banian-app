@@ -49,6 +49,7 @@ export default function ExhibitorNotifications({
   recipientsPerCredit,
   history,
   setHistory,
+  initialMessage,
   onBack,
 }: {
   credits: number
@@ -56,9 +57,10 @@ export default function ExhibitorNotifications({
   recipientsPerCredit: number
   history: ExhibitorNotificationEntry[]
   setHistory: React.Dispatch<React.SetStateAction<ExhibitorNotificationEntry[]>>
+  initialMessage?: string
   onBack: () => void
 }) {
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(initialMessage || '')
   const [selectedCategories, setSelectedCategories] = useState<CategoryId[]>([])
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('now')
   const [scheduledAt, setScheduledAt] = useState('')
