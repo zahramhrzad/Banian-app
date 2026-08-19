@@ -3,7 +3,7 @@ import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 
 // این لیست فقط برای تست فاز فعلیه؛ در فاز اتصال Supabase با کوئری واقعی از جدول companies جایگزین می‌شود
-const demoExhibitorCodes: Record<string, string> = {
+export const demoExhibitorCodes: Record<string, string> = {
   'EXH-1000': 'بانک آینده',
   'EXH-2000': 'کارگزاری آگاه',
   'EXH-3000': 'بیمه‌ی البرز',

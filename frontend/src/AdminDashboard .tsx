@@ -53,7 +53,6 @@ export default function AdminDashboard({
   activityLog,
   notificationCreditRate,
   setNotificationCreditRate,
-  incompleteQualityFormCount,
   onOpenRegistrants,
   onOpenDataEntry,
   onOpenPromotions,
@@ -67,7 +66,6 @@ export default function AdminDashboard({
   activityLog: ActivityLogEntry[]
   notificationCreditRate: number
   setNotificationCreditRate: React.Dispatch<React.SetStateAction<number>>
-  incompleteQualityFormCount: number
   onOpenRegistrants: () => void
   onOpenDataEntry: () => void
   onOpenPromotions: () => void
@@ -77,10 +75,6 @@ export default function AdminDashboard({
   onLogout: () => void
 }) {
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
-  const warnings =
-    incompleteQualityFormCount > 0
-      ? [`${toFa(incompleteQualityFormCount)} غرفه هنوز فرم کیفیت مشارکت را تکمیل نکرده‌اند`, ...mockWarnings]
-      : mockWarnings
 
   return (
     <div
@@ -170,7 +164,7 @@ export default function AdminDashboard({
         >
           <div className="text-[8.5px] font-bold mb-1.5" style={{ color: '#d9534f' }}>هشدارهای مدیریتی</div>
           <div className="flex flex-col gap-1">
-            {warnings.map((w, i) => (
+            {mockWarnings.map((w, i) => (
               <div key={i} className="text-[8px]" style={{ color: '#e0908c' }}>{w}</div>
             ))}
           </div>

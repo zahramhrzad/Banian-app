@@ -22,10 +22,6 @@ function VisitPriority({
   const [hovered, setHovered] = useState<string | null>(null)
 
   const toggle = (id: string) => {
-    if (isExhibitor) {
-      setSelected([id])
-      return
-    }
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
@@ -63,11 +59,9 @@ function VisitPriority({
           : 'لطفاً بفرمایید کدام حوزه‌ی فعالیت برای شما در اولویت است؟'}
       </div>
 
-      {isExhibitor && (
-        <p className="text-xs mb-4 text-center z-10" style={{ color: '#9b9baf' }}>
-          فقط یک گزینه قابل انتخاب است
-        </p>
-      )}
+      <p className="text-xs mb-4 text-center z-10" style={{ color: '#9b9baf' }}>
+        می‌توانید چند گزینه را انتخاب کنید
+      </p>
 
       <div className="flex flex-col gap-3 w-full max-w-md z-10">
         {categories.map((c) => {
@@ -90,12 +84,12 @@ function VisitPriority({
               <span
                 className="w-5 h-5 flex items-center justify-center flex-shrink-0"
                 style={{
-                  borderRadius: isExhibitor ? '9999px' : '6px',
+                  borderRadius: '6px',
                   border: '2px solid #be9c77',
                   background: isSelected ? '#be9c77' : 'transparent',
                 }}
               >
-                {isSelected && !isExhibitor && (
+                {isSelected && (
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1b2134" strokeWidth="3">
                     <path d="M5 13l4 4L19 7" />
                   </svg>

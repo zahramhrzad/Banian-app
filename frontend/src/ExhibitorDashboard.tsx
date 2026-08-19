@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { type Product, categoryInfo as productCategoryInfo, type CategoryId } from './ExhibitorProducts'
 import { type PanelSession, DAYS, isPast } from './ExhibitorPanels'
 import { type Agreement } from './ExhibitorAgreements'
 import { type ExhibitorPromotion, computeStatus } from './ExhibitorPromotions'
 import { type SentInvite } from './ExhibitorInvites'
 import { type MeetingRequest } from './ExhibitorAppointments'
+import { type ExhibitorInboxNotif } from './ExhibitorNotificationsInbox'
 
 const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
 
@@ -18,7 +20,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 46
 
 interface ExhibitorDashboardProps {
   companyName: string
-  activityCategory: string
+  activityCategories: string[]
   products: Product[]
   panels: PanelSession[]
   agreements: Agreement[]
@@ -26,6 +28,11 @@ interface ExhibitorDashboardProps {
   inviteQuota: number
   sentInvites: SentInvite[]
   meetingRequests: MeetingRequest[]
+  qualityFormUrl: string
+  qualityFormCompleted: boolean
+  onMarkQualityFormDone: () => void
+  inboxNotifs: ExhibitorInboxNotif[]
+  onOpenInbox: () => void
   onOpenProducts: () => void
   onOpenPanels: () => void
   onOpenPromotions: () => void
@@ -40,7 +47,7 @@ interface ExhibitorDashboardProps {
 
 export default function ExhibitorDashboard({
   companyName,
-  activityCategory,
+  activityCategories,
   products,
   panels,
   agreements,
@@ -48,6 +55,11 @@ export default function ExhibitorDashboard({
   inviteQuota,
   sentInvites,
   meetingRequests,
+  qualityFormUrl,
+  qualityFormCompleted,
+  onMarkQualityFormDone,
+  inboxNotifs,
+  onOpenInbox,
   onOpenProducts,
   onOpenPanels,
   onOpenPromotions,
@@ -59,7 +71,13 @@ export default function ExhibitorDashboard({
   onOpenBoothQr,
   onLogout,
 }: ExhibitorDashboardProps) {
-  const cat = productCategoryInfo(activityCategory as CategoryId)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
+
+  const cats = activityCategories
+    .map((id) => productCategoryInfo(id as CategoryId))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+
+  const unreadInboxCount = inboxNotifs.filter((n) => !n.read).length
 
   const upcomingPanelsCount = panels.filter((p) => !isPast(p.dayId)).length
   const activePromotionsCount = promotions.filter((p) => computeStatus(p) === 'active').length
@@ -75,6 +93,7 @@ export default function ExhibitorDashboard({
   const draftPanelsCount = panels.filter((p) => !p.published).length
 
   const reminders: string[] = []
+  if (!qualityFormCompleted) reminders.push('هنوز فرم کیفیت مشارکت را تکمیل نکرده‌اید')
   if (draftProductsCount > 0) reminders.push(`${toFa(draftProductsCount)} محصول در حالت پیش‌نویس مونده`)
   if (draftPanelsCount > 0) reminders.push(`${toFa(draftPanelsCount)} پنل هنوز منتشر نشده`)
   if (negotiatingAgreementsCount > 0) reminders.push(`${toFa(negotiatingAgreementsCount)} قرارداد در حال مذاکره‌ست`)
@@ -112,25 +131,87 @@ export default function ExhibitorDashboard({
             <div className="text-sm font-bold" style={{ color: '#fff' }}>
               غرفه‌ی {companyName}
             </div>
-            {cat && (
-              <span
-                className="inline-block mt-1.5 text-[8.5px] font-bold px-2 py-1 rounded-md"
-                style={{ background: cat.color, color: cat.text }}
-              >
-                {cat.label}
-              </span>
+            {cats.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {cats.map((cat) => (
+                  <span
+                    key={cat.label}
+                    className="inline-block text-[8.5px] font-bold px-2 py-1 rounded-md"
+                    style={{ background: cat.color, color: cat.text }}
+                  >
+                    {cat.label}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
-          <button
-            onClick={onLogout}
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(190,156,119,0.18)', border: 'none', cursor: 'pointer' }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
-              <path d="M3 21h18M4 21V9l8-5 8 5v12M9 21v-6h6v6" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={onOpenInbox}
+              className="relative w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(190,156,119,0.18)', border: 'none', cursor: 'pointer' }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
+                <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 01-3.46 0" />
+              </svg>
+              {unreadInboxCount > 0 && (
+                <span
+                  className="absolute flex items-center justify-center rounded-full"
+                  style={{ top: '-3px', left: '-3px', width: '15px', height: '15px', background: '#d9534f', color: '#fff', fontSize: '9px' }}
+                >
+                  {toFa(unreadInboxCount)}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={onLogout}
+              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(190,156,119,0.18)', border: 'none', cursor: 'pointer' }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.6">
+                <path d="M3 21h18M4 21V9l8-5 8 5v12M9 21v-6h6v6" />
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {!qualityFormCompleted && !bannerDismissed && (
+          <div
+            className="rounded-2xl p-3.5 mb-3"
+            style={{ background: 'rgba(190,156,119,0.14)', border: '1.5px solid rgba(190,156,119,0.5)' }}
+          >
+            <div className="text-[10px] font-bold mb-1" style={{ color: '#e8cfa8' }}>تکمیل کیفیت مشارکت</div>
+            <div className="text-[9px] mb-2.5 leading-relaxed" style={{ color: '#c9c7d0' }}>
+              لطفاً جهت تکمیل کیفیت مشارکت، فرم کوتاه زیر را پر کنید
+            </div>
+            <div className="flex gap-1.5 mb-2">
+              <a
+                href={qualityFormUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 rounded-lg py-2 text-center text-[9.5px] font-bold"
+                style={{ background: '#be9c77', color: '#1b2134', textDecoration: 'none' }}
+              >
+                تکمیل فرم
+              </a>
+              <button
+                onClick={() => setBannerDismissed(true)}
+                className="rounded-lg px-3 text-[9.5px]"
+                style={{ background: 'transparent', color: '#9b9baf', border: '1px solid #3a3f52', cursor: 'pointer' }}
+              >
+                بعداً
+              </button>
+            </div>
+            <button
+              onClick={onMarkQualityFormDone}
+              className="text-[8.5px] font-bold underline"
+              style={{ background: 'none', border: 'none', color: '#7d9a86', cursor: 'pointer' }}
+            >
+              فرم را تکمیل کردم
+            </button>
+          </div>
+        )}
 
         <div className="rounded-2xl p-4 mb-3" style={groupCardStyle}>
           <div className="flex items-center gap-1.5 mb-3">
