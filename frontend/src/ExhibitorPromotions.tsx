@@ -10,7 +10,7 @@ import {
 
 export const MAX_ACTIVE = 3
 
-const categories: { id: PromotionCategory; label: string }[] = [
+export const categories: { id: PromotionCategory; label: string }[] = [
   { id: 'bank', label: 'بانک، اعتبار و پرداخت' },
   { id: 'insurance', label: 'بیمه و مدیریت ریسک' },
   { id: 'capital', label: 'بازار سرمایه و سرمایه‌گذاری' },
@@ -26,8 +26,11 @@ const statusInfo: Record<Status, { label: string; bg: string; text: string }> = 
   expired: { label: 'منقضی شده', bg: 'rgba(217,83,79,0.12)', text: '#c76b5f' },
 }
 
+export type PromotionRequestStatus = 'draft' | 'pending' | 'approved' | 'rejected'
+
 export interface ExhibitorPromotion {
   id: string
+  companyName: string
   title: string
   desc: string
   category: PromotionCategory
@@ -36,9 +39,12 @@ export interface ExhibitorPromotion {
   endAt: string
   published: boolean
   createdAt: number
+  requestStatus: PromotionRequestStatus
+  rejectionReason?: string
+  paymentConfirmed?: boolean
 }
 
-const emptyPromotion: Omit<ExhibitorPromotion, 'id' | 'createdAt'> = {
+const emptyPromotion: Omit<ExhibitorPromotion, 'id' | 'createdAt' | 'companyName' | 'requestStatus' | 'rejectionReason' | 'paymentConfirmed'> = {
   title: '',
   desc: '',
   category: 'bank',
@@ -50,7 +56,7 @@ const emptyPromotion: Omit<ExhibitorPromotion, 'id' | 'createdAt'> = {
 
 const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
 
-export function computeStatus(p: Omit<ExhibitorPromotion, 'id' | 'createdAt'>): Status {
+export function computeStatus(p: Pick<ExhibitorPromotion, 'published' | 'startAt' | 'endAt'>): Status {
   if (!p.published) return 'draft'
   const now = Date.now()
   const start = p.startAt ? new Date(p.startAt).getTime() : null
@@ -60,7 +66,7 @@ export function computeStatus(p: Omit<ExhibitorPromotion, 'id' | 'createdAt'>): 
   return 'active'
 }
 
-function urgencyText(p: Omit<ExhibitorPromotion, 'id' | 'createdAt'>): string | null {
+function urgencyText(p: Pick<ExhibitorPromotion, 'endAt'>): string | null {
   if (!p.endAt) return null
   const end = new Date(p.endAt).getTime()
   const now = Date.now()
@@ -91,7 +97,7 @@ export default function ExhibitorPromotions({
 }) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<Omit<ExhibitorPromotion, 'id' | 'createdAt'>>(emptyPromotion)
+  const [form, setForm] = useState<Omit<ExhibitorPromotion, 'id' | 'createdAt' | 'companyName' | 'requestStatus' | 'rejectionReason' | 'paymentConfirmed'>>(emptyPromotion)
   const [capWarning, setCapWarning] = useState(false)
 
   const fieldClass = 'flex items-center gap-2 bg-white rounded-xl px-3.5 py-3'
@@ -137,9 +143,23 @@ export default function ExhibitorPromotions({
   const savePromotion = () => {
     if (!isValid) return
     if (editingId) {
-      setPromotions((prev) => prev.map((p) => (p.id === editingId ? { ...p, ...form } : p)))
+      setPromotions((prev) =>
+        prev.map((p) => {
+          if (p.id !== editingId) return p
+          const wasRejected = p.requestStatus === 'rejected'
+          return {
+            ...p,
+            ...form,
+            requestStatus: wasRejected ? 'pending' : p.requestStatus,
+            rejectionReason: wasRejected ? undefined : p.rejectionReason,
+          }
+        })
+      )
     } else {
-      setPromotions((prev) => [...prev, { id: Date.now().toString(), createdAt: Date.now(), ...form, published: false }])
+      setPromotions((prev) => [
+        ...prev,
+        { id: Date.now().toString(), createdAt: Date.now(), companyName, requestStatus: 'draft', ...form, published: false },
+      ])
     }
     closeForm()
   }
@@ -148,26 +168,12 @@ export default function ExhibitorPromotions({
     setPromotions((prev) => prev.filter((p) => p.id !== id))
   }
 
-  const togglePublished = (id: string) => {
-    setCapWarning(false)
-    setPromotions((prev) => {
-      const target = prev.find((p) => p.id === id)
-      if (!target) return prev
+  const submitRequest = (id: string) => {
+    setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, requestStatus: 'pending' } : p)))
+  }
 
-      if (!target.published) {
-        const wouldBeStatus = computeStatus({ ...target, published: true })
-        if (wouldBeStatus === 'active') {
-          const currentActiveCount = prev.filter(
-            (p) => p.id !== id && computeStatus(p) === 'active'
-          ).length
-          if (currentActiveCount >= MAX_ACTIVE) {
-            setCapWarning(true)
-            return prev
-          }
-        }
-      }
-      return prev.map((p) => (p.id === id ? { ...p, published: !p.published } : p))
-    })
+  const cancelRequest = (id: string) => {
+    setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, requestStatus: 'draft' } : p)))
   }
 
   const previewUrgency = urgencyText(form)
@@ -202,18 +208,27 @@ export default function ExhibitorPromotions({
                 const status = computeStatus(p)
                 const st = statusInfo[status]
                 const urgency = status === 'active' ? urgencyText(p) : null
+                const isPending = p.requestStatus === 'pending'
+                const isRejected = p.requestStatus === 'rejected'
                 return (
                   <div key={p.id} className="bg-white rounded-2xl p-3.5">
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <span className="text-[11px] font-bold" style={{ color: '#1b2134' }}>
                         {p.title}
                       </span>
-                      <span
-                        className="text-[8px] font-bold px-2 py-1 rounded-md flex-shrink-0"
-                        style={{ background: st.bg, color: st.text }}
-                      >
-                        {st.label}
-                      </span>
+                      {isPending ? (
+                        <span className="text-[8px] font-bold px-2 py-1 rounded-md flex-shrink-0" style={{ background: 'rgba(190,156,119,0.18)', color: '#8a6d4d' }}>
+                          در انتظار تایید ادمین
+                        </span>
+                      ) : isRejected ? (
+                        <span className="text-[8px] font-bold px-2 py-1 rounded-md flex-shrink-0" style={{ background: 'rgba(155,155,175,0.15)', color: '#9b9baf' }}>
+                          رد شده
+                        </span>
+                      ) : (
+                        <span className="text-[8px] font-bold px-2 py-1 rounded-md flex-shrink-0" style={{ background: st.bg, color: st.text }}>
+                          {st.label}
+                        </span>
+                      )}
                     </div>
 
                     {p.desc && (
@@ -227,36 +242,70 @@ export default function ExhibitorPromotions({
                       {urgency && ` · ${urgency}`}
                     </div>
 
-                    <div className="flex items-center justify-between mt-2.5">
-                      <button
-                        onClick={() => togglePublished(p.id)}
-                        className="text-[8.5px] font-bold px-2 py-1 rounded-md"
-                        style={{
-                          background: p.published ? '#e3f0e0' : 'rgba(155,155,175,0.15)',
-                          color: p.published ? '#3f6b4d' : '#9b9baf',
-                          border: 'none',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {p.published ? 'لغو انتشار' : 'انتشار'}
-                      </button>
-                      <div className="flex items-center gap-2.5">
+                    {isRejected && (
+                      <div className="rounded-lg px-2.5 py-2 mt-2" style={{ background: 'rgba(217,83,79,0.08)' }}>
+                        <div className="text-[8.5px] font-bold" style={{ color: '#c76b5f' }}>
+                          دلیل رد: {p.rejectionReason || 'مشخص نشده'}
+                        </div>
+                      </div>
+                    )}
+
+                    {isPending && (
+                      <div className="mt-2.5 flex items-center justify-between">
+                        <span className="text-[8.5px]" style={{ color: '#9b9baf' }}>درخواست انتشار ارسال شد</span>
                         <button
-                          onClick={() => openEditForm(p)}
-                          className="text-[9.5px] underline"
-                          style={{ color: '#be9c77', background: 'none', border: 'none', cursor: 'pointer' }}
-                        >
-                          ویرایش
-                        </button>
-                        <button
-                          onClick={() => deletePromotion(p.id)}
-                          className="text-[9.5px] underline"
+                          onClick={() => cancelRequest(p.id)}
+                          className="text-[9px] underline"
                           style={{ color: '#c76b5f', background: 'none', border: 'none', cursor: 'pointer' }}
                         >
-                          حذف
+                          لغو درخواست
                         </button>
                       </div>
-                    </div>
+                    )}
+
+                    {isRejected && (
+                      <button
+                        onClick={() => openEditForm(p)}
+                        className="w-full mt-2.5 rounded-full py-2 font-bold text-[9.5px]"
+                        style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
+                      >
+                        ویرایش و ارسال مجدد
+                      </button>
+                    )}
+
+                    {!isPending && !isRejected && (
+                      <div className="flex items-center justify-between mt-2.5">
+                        {p.requestStatus === 'draft' ? (
+                          <button
+                            onClick={() => submitRequest(p.id)}
+                            className="text-[8.5px] font-bold px-2 py-1 rounded-md"
+                            style={{ background: 'rgba(190,156,119,0.18)', color: '#8a6d4d', border: 'none', cursor: 'pointer' }}
+                          >
+                            ارسال درخواست انتشار
+                          </button>
+                        ) : (
+                          <span className="text-[8px] font-bold px-2 py-1 rounded-md" style={{ background: '#e3f0e0', color: '#3f6b4d' }}>
+                            تایید و منتشر شده
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2.5">
+                          <button
+                            onClick={() => openEditForm(p)}
+                            className="text-[9.5px] underline"
+                            style={{ color: '#be9c77', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            ویرایش
+                          </button>
+                          <button
+                            onClick={() => deletePromotion(p.id)}
+                            className="text-[9.5px] underline"
+                            style={{ color: '#c76b5f', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}

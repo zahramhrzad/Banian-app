@@ -15,11 +15,13 @@ import ExhibitorReport from './ExhibitorReport'
 import ExhibitorScan, { type ScanLog } from './ExhibitorScan'
 import ExhibitorBoothQr from './ExhibitorBoothQr'
 import VisitorBoothScan from './VisitorBoothScan'
-import AdminLogin, { type AdminRole } from './AdminLogin'
+import AdminLogin, { type AdminRole, type AdminAccount, defaultAdminAccounts } from './AdminLogin'
 import AdminDashboard, { type ActivityLogEntry } from './AdminDashboard'
 import AdminRegistrants from './AdminRegistrants'
 import AdminDataEntry from './AdminDataEntry'
 import AdminPromotions from './AdminPromotions'
+import AdminUsers from './AdminUsers'
+import AdminPromotionRequests from './AdminPromotionRequests'
 import AdminNotifications, { type AdminNotificationEntry } from './AdminNotifications'
 import ExhibitorNotifications, { type ExhibitorNotificationEntry } from './ExhibitorNotifications'
 import AdminScans from './AdminScans'
@@ -78,6 +80,8 @@ type Step =
   | 'adminRegistrants'
   | 'adminDataEntry'
   | 'adminPromotions'
+  | 'adminPromotionRequests'
+  | 'adminUsers'
   | 'adminNotifications'
   | 'adminQualityForm'
   | 'exhibitorNotifications'
@@ -165,7 +169,9 @@ function App() {
   const [step, setStep] = useState<Step>('splash')
   const [userType, setUserType] = useState<'visitor' | 'exhibitor'>('visitor')
   const [adminDisplayName, setAdminDisplayName] = useState('')
+  const [adminUsername, setAdminUsername] = useState('')
   const [adminRole, setAdminRole] = useState<AdminRole>('operator')
+  const [adminAccounts, setAdminAccounts] = useState<AdminAccount[]>(defaultAdminAccounts)
   const [adminActivityLog, setAdminActivityLog] = useState<ActivityLogEntry[]>([
     { admin: 'مدیر کل', action: 'پروموشن «تخفیف ویژه بانک آینده» را منتشر کرد', time: '۱۰ دقیقه پیش' },
     { admin: 'اپراتور دیتا', action: 'اطلاعات غرفه‌ی «کارگزاری آگاه» را ویرایش کرد', time: '۴۵ دقیقه پیش' },
@@ -412,7 +418,9 @@ function App() {
   if (step === 'adminLogin') {
     return (
       <AdminLogin
-        onSubmit={(_username, role, displayName) => {
+        accounts={adminAccounts}
+        onSubmit={(username, role, displayName) => {
+          setAdminUsername(username)
           setAdminRole(role)
           setAdminDisplayName(displayName)
           setStep('adminDashboard')
@@ -431,16 +439,43 @@ function App() {
         notificationCreditRate={notificationCreditRate}
         setNotificationCreditRate={setNotificationCreditRate}
         incompleteQualityFormCount={companyList.filter((c) => !qualityFormStatus[c]).length}
+        pendingPromotionRequestsCount={exhibitorPromotions.filter((p) => p.requestStatus === 'pending').length}
         onOpenRegistrants={() => setStep('adminRegistrants')}
         onOpenDataEntry={() => setStep('adminDataEntry')}
         onOpenPromotions={() => setStep('adminPromotions')}
+        onOpenPromotionRequests={() => setStep('adminPromotionRequests')}
         onOpenNotifications={() => setStep('adminNotifications')}
         onOpenScans={() => setStep('adminScans')}
         onOpenQualityForm={() => setStep('adminQualityForm')}
+        onOpenUsers={() => setStep('adminUsers')}
         onLogout={() => {
           setAdminDisplayName('')
+          setAdminUsername('')
           setStep('select')
         }}
+      />
+    )
+  }
+
+  if (step === 'adminUsers') {
+    return (
+      <AdminUsers
+        accounts={adminAccounts}
+        setAccounts={setAdminAccounts}
+        currentUsername={adminUsername}
+        onLogActivity={logAdminActivity}
+        onBack={() => setStep('adminDashboard')}
+      />
+    )
+  }
+
+  if (step === 'adminPromotionRequests') {
+    return (
+      <AdminPromotionRequests
+        requests={exhibitorPromotions}
+        setRequests={setExhibitorPromotions}
+        onLogActivity={logAdminActivity}
+        onBack={() => setStep('adminDashboard')}
       />
     )
   }

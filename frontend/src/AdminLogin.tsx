@@ -4,16 +4,25 @@ import PageTitle from './PageTitle'
 
 export type AdminRole = 'super' | 'operator'
 
-// دموی تست — بعداً با احراز هویت واقعی جایگزین می‌شه
-const demoAdmins: Record<string, { password: string; role: AdminRole; displayName: string }> = {
-  admin: { password: 'Banian@2026', role: 'super', displayName: 'مدیر کل' },
-  operator: { password: 'Data@2026', role: 'operator', displayName: 'اپراتور دیتا' },
+export interface AdminAccount {
+  username: string
+  password: string
+  role: AdminRole
+  displayName: string
 }
 
+// دموی تست — بعداً با احراز هویت واقعی جایگزین می‌شه
+export const defaultAdminAccounts: AdminAccount[] = [
+  { username: 'admin', password: 'Banian@2026', role: 'super', displayName: 'مدیر کل' },
+  { username: 'operator', password: 'Data@2026', role: 'operator', displayName: 'اپراتور دیتا' },
+]
+
 export default function AdminLogin({
+  accounts,
   onSubmit,
   onBack,
 }: {
+  accounts: AdminAccount[]
   onSubmit: (username: string, role: AdminRole, displayName: string) => void
   onBack: () => void
 }) {
@@ -26,12 +35,12 @@ export default function AdminLogin({
 
   const handleSubmit = () => {
     if (!isValid) return
-    const account = demoAdmins[username.trim().toLowerCase()]
+    const account = accounts.find((a) => a.username.toLowerCase() === username.trim().toLowerCase())
     if (!account || account.password !== password) {
       setError(true)
       return
     }
-    onSubmit(username.trim(), account.role, account.displayName)
+    onSubmit(account.username, account.role, account.displayName)
   }
 
   return (
