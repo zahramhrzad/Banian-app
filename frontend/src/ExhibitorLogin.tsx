@@ -35,7 +35,18 @@ function ExhibitorLogin({
   const glowShadow =
     '0 0 8px 2px rgba(190,156,119,0.5), 0 0 22px 6px rgba(190,156,119,0.35)'
 
-  const isValid = name.trim() !== '' && mobile.trim() !== '' && password.trim() !== ''
+  const isMobileValid = /^9\d{9}$/.test(mobile)
+  const isValid = name.trim() !== '' && isMobileValid && password.trim() !== ''
+
+  const handleMobileChange = (raw: string) => {
+    let digits = raw.replace(/\D/g, '')
+    if (digits.startsWith('0')) {
+      digits = digits.slice(1)
+    }
+    digits = digits.slice(0, 10)
+    setMobile(digits)
+    if (status === 'error') setStatus('idle')
+  }
 
   const handleSubmit = () => {
     if (!isValid || status === 'success') return
@@ -141,12 +152,11 @@ function ExhibitorLogin({
           <div className="w-px h-5" style={{ background: '#e0e0e0' }}></div>
           <input
             type="tel"
+            inputMode="numeric"
             value={mobile}
-            onChange={(e) => {
-              setMobile(e.target.value)
-              if (status === 'error') setStatus('idle')
-            }}
+            onChange={(e) => handleMobileChange(e.target.value)}
             placeholder="912 345 6789"
+            maxLength={10}
             className="flex-1 py-3.5 px-1 text-sm outline-none border-none"
             style={{ color: '#1b2134' }}
           />

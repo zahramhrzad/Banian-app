@@ -56,7 +56,17 @@ export default function ExhibitorInvites({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const remaining = quota - sentInvites.length
-  const canSend = phone.trim().length >= 9 && remaining > 0
+  const isPhoneValid = /^9\d{9}$/.test(phone)
+  const canSend = isPhoneValid && remaining > 0
+
+  const handlePhoneChange = (raw: string) => {
+    let digits = raw.replace(/\D/g, '')
+    if (digits.startsWith('0')) {
+      digits = digits.slice(1)
+    }
+    digits = digits.slice(0, 10)
+    setPhone(digits)
+  }
 
   const handleSend = () => {
     if (!canSend) return
@@ -215,12 +225,14 @@ export default function ExhibitorInvites({
                 <div className="w-px h-5" style={{ background: '#e0e0e0' }}></div>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSend()
                   }}
                   placeholder="912 345 6789"
+                  maxLength={10}
                   className="flex-1 text-sm outline-none border-none"
                   style={{ color: '#1b2134' }}
                 />
