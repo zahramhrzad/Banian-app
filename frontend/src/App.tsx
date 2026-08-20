@@ -27,7 +27,7 @@ import AdminQualityForm from './AdminQualityForm'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import ExhibitorNotificationsInbox, { type ExhibitorInboxNotif } from './ExhibitorNotificationsInbox'
 import OtpVerify from './OtpVerify'
-import Registration from './Registration'
+import Registration, { type RegistrationData } from './Registration'
 import TicketPurchase, { type TicketPurchaseResult } from './TicketPurchase'
 import PaymentGateway from './PaymentGateway'
 import TicketsIssued from './TicketsIssued'
@@ -36,12 +36,16 @@ import type { Ticket } from './TicketCard'
 import VisitorDashboard from './VisitorDashboard'
 import MapAccess from './MapAccess'
 import AccessInfo from './AccessInfo'
-import Participants from './Participants'
+import Participants, { companiesDirectory } from './Participants'
 import Panels from './Panels'
 import MyAppointments from './MyAppointments'
 import Notifications, { type VisitorNotif, initialVisitorNotifs } from './Notifications'
 import Promotions from './Promotions'
 import { initialPromotions } from './Promotion'
+import MyAccount from './MyAccount'
+import CompanyProfile, { type CompanyProfileData } from './CompanyProfile'
+import ExhibitorProfile from './ExhibitorProfile'
+import ExhibitorJobSeekers, { type JobSeekerEntry } from './ExhibitorJobSeekers'
 
 type Step =
   | 'splash'
@@ -84,6 +88,10 @@ type Step =
   | 'myAppointments'
   | 'notifications'
   | 'promotions'
+  | 'myAccount'
+  | 'companyProfile'
+  | 'exhibitorProfileEdit'
+  | 'exhibitorJobSeekers'
 
 let ticketIdCounter = 214
 
@@ -101,6 +109,20 @@ function generateNotifId() {
 
 // لیست یکتای غرفه‌داران از روی کدهای دمو — در فاز اتصال Supabase از جدول companies خوانده می‌شود
 const companyList = Array.from(new Set(Object.values(demoExhibitorCodes)))
+
+const emptyRegistrationData: RegistrationData = {
+  fullName: '',
+  age: '',
+  gender: '',
+  jobTitle: '',
+  company: '',
+  wantsJob: null,
+  experience: '',
+  education: '',
+  achievement: '',
+  skills: '',
+  preferredCompanies: '',
+}
 
 // لینک عمومی فرم گوگل که غرفه‌داران باید پر کنند
 const EXHIBITOR_FORM_URL = 'https://forms.gle/7yGXCQRpHpebMUba8'
@@ -150,7 +172,7 @@ function App() {
   const [mobile, setMobile] = useState('')
   const [priorityCategories, setPriorityCategories] = useState<string[]>([])
   const [visitGoals, setVisitGoals] = useState<string[]>([])
-  const [registrationData, setRegistrationData] = useState<unknown>(null)
+  const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [newlyIssuedTickets, setNewlyIssuedTickets] = useState<Ticket[]>([])
   const [pendingTickets, setPendingTickets] = useState<TicketPurchaseResult[]>([])
@@ -175,8 +197,13 @@ function App() {
   const [exhibitorInboxNotifs, setExhibitorInboxNotifs] = useState<Record<string, ExhibitorInboxNotif[]>>({})
   const [lastReminderLabel, setLastReminderLabel] = useState<Record<string, string>>({})
   const [notificationPrefill, setNotificationPrefill] = useState('')
+  const [companyProfiles, setCompanyProfiles] = useState<Record<string, CompanyProfileData>>({})
+  const [savedCompanyNames, setSavedCompanyNames] = useState<Set<string>>(new Set(['بانک آینده']))
+  const [exhibitorJobSeekerAccess, setExhibitorJobSeekerAccess] = useState<Record<string, boolean>>({})
+  const [viewingCompany, setViewingCompany] = useState('')
   void visitGoals
-  void registrationData
+
+  const emptyCompanyProfile: CompanyProfileData = { bio: '', products: '', website: '', phone: '', achievements: '' }
 
   const togglePromotionSave = (id: string) => {
     setSavedPromotionIds((prev) => {
@@ -187,8 +214,45 @@ function App() {
     })
   }
 
+  const openCompanyProfile = (company: string) => {
+    setViewingCompany(company)
+    setStep('companyProfile')
+  }
+
   const openPromotionCompany = (company: string) => {
-    alert('رفتن به پروفایل «' + company + '» (این صفحه هنوز ساخته نشده)')
+    openCompanyProfile(company)
+  }
+
+  const saveCompanyProfile = (company: string, patch: Partial<CompanyProfileData>) => {
+    setCompanyProfiles((prev) => ({
+      ...prev,
+      [company]: { ...emptyCompanyProfile, ...prev[company], ...patch },
+    }))
+  }
+
+  const toggleSavedCompany = (company: string) => {
+    setSavedCompanyNames((prev) => {
+      const next = new Set(prev)
+      if (next.has(company)) next.delete(company)
+      else next.add(company)
+      return next
+    })
+  }
+
+  const activateJobSeekerAccess = () => {
+    setExhibitorJobSeekerAccess((prev) => ({ ...prev, [exhibitorCompany]: true }))
+  }
+
+  const saveRegistrationData = (patch: Partial<RegistrationData>) => {
+    setRegistrationData((prev) => (prev ? { ...prev, ...patch } : prev))
+  }
+
+  const handleVisitorLogout = () => {
+    setName('')
+    setMobile('')
+    setRegistrationData(null)
+    setPriorityCategories([])
+    setStep('select')
   }
 
   const handleExhibitorLogout = () => {
@@ -552,6 +616,7 @@ function App() {
         onOpenMyAppointments={() => setStep('myAppointments')}
         onOpenNotifications={() => setStep('notifications')}
         onOpenBoothScan={() => setStep('visitorScan')}
+        onOpenMyAccount={() => setStep('myAccount')}
         promotions={initialPromotions}
         savedPromotionIds={savedPromotionIds}
         onTogglePromotionSave={togglePromotionSave}
@@ -590,6 +655,8 @@ function App() {
           setStep('exhibitorNotifications')
         }}
         onOpenBoothQr={() => setStep('exhibitorBoothQr')}
+        onOpenProfileEdit={() => setStep('exhibitorProfileEdit')}
+        onOpenJobSeekers={() => setStep('exhibitorJobSeekers')}
         onLogout={handleExhibitorLogout}
       />
     )
@@ -725,7 +792,14 @@ function App() {
   }
 
   if (step === 'participants') {
-    return <Participants onBack={() => setStep('dashboard')} />
+    return (
+      <Participants
+        onBack={() => setStep('dashboard')}
+        onOpenProfile={openCompanyProfile}
+        savedCompanyNames={savedCompanyNames}
+        onToggleSave={toggleSavedCompany}
+      />
+    )
   }
 
   if (step === 'panels') {
@@ -758,6 +832,75 @@ function App() {
         onToggleSave={togglePromotionSave}
         onOpenCompany={openPromotionCompany}
         onBack={() => setStep('dashboard')}
+      />
+    )
+  }
+
+  if (step === 'myAccount') {
+    return (
+      <MyAccount
+        name={name}
+        mobile={mobile}
+        data={registrationData || emptyRegistrationData}
+        onSave={saveRegistrationData}
+        meetingRequests={meetingRequests}
+        savedCount={savedCompanyNames.size}
+        ticketsCount={tickets.length}
+        onOpenMyAppointments={() => setStep('myAppointments')}
+        onBack={() => setStep('dashboard')}
+        onLogout={handleVisitorLogout}
+      />
+    )
+  }
+
+  if (step === 'companyProfile') {
+    return (
+      <CompanyProfile
+        company={companiesDirectory.find((c) => c.name === viewingCompany)}
+        companyName={viewingCompany}
+        profile={companyProfiles[viewingCompany]}
+        isSaved={savedCompanyNames.has(viewingCompany)}
+        onToggleSave={() => toggleSavedCompany(viewingCompany)}
+        onRequestMeeting={() => {
+          createMeetingRequestFromScan(viewingCompany)
+          setStep('dashboard')
+        }}
+        onBack={() => setStep('dashboard')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorProfileEdit') {
+    return (
+      <ExhibitorProfile
+        companyName={exhibitorCompany}
+        company={companiesDirectory.find((c) => c.name === exhibitorCompany)}
+        profile={companyProfiles[exhibitorCompany] || emptyCompanyProfile}
+        onSave={(patch) => saveCompanyProfile(exhibitorCompany, patch)}
+        onBack={() => setStep('exhibitorHome')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorJobSeekers') {
+    const liveEntry: JobSeekerEntry | null =
+      registrationData && registrationData.wantsJob
+        ? {
+            id: 'live-visitor',
+            name: registrationData.fullName || 'بازدیدکننده',
+            jobTitle: registrationData.jobTitle || '—',
+            experience: registrationData.experience || '—',
+            education: registrationData.education || '—',
+            skills: registrationData.skills || '—',
+            preferredCompanies: registrationData.preferredCompanies || '—',
+          }
+        : null
+    return (
+      <ExhibitorJobSeekers
+        hasAccess={!!exhibitorJobSeekerAccess[exhibitorCompany]}
+        onActivateAccess={activateJobSeekerAccess}
+        liveEntry={liveEntry}
+        onBack={() => setStep('exhibitorHome')}
       />
     )
   }

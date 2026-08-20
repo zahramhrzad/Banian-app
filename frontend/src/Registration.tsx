@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import BackButton from './BackButton'
 
-type Gender = 'مرد' | 'زن' | ''
+export type Gender = 'مرد' | 'زن' | ''
 
-interface RegistrationData {
+export interface RegistrationData {
   fullName: string
   age: string
   gender: Gender

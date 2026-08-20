@@ -42,6 +42,8 @@ interface ExhibitorDashboardProps {
   onOpenScan: () => void
   onOpenNotifications: () => void
   onOpenBoothQr: () => void
+  onOpenProfileEdit: () => void
+  onOpenJobSeekers: () => void
   onLogout: () => void
 }
 
@@ -69,6 +71,8 @@ export default function ExhibitorDashboard({
   onOpenScan,
   onOpenNotifications,
   onOpenBoothQr,
+  onOpenProfileEdit,
+  onOpenJobSeekers,
   onLogout,
 }: ExhibitorDashboardProps) {
   const [bannerDismissed, setBannerDismissed] = useState(false)
@@ -364,10 +368,26 @@ export default function ExhibitorDashboard({
 
         <button
           onClick={onOpenReport}
-          className="w-full rounded-2xl p-3 mb-4 text-right"
+          className="w-full rounded-2xl p-3 mb-3 text-right"
           style={{ ...groupCardStyle, cursor: 'pointer' }}
         >
           <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>گزارش نهایی غرفه</span>
+        </button>
+
+        <button
+          onClick={onOpenProfileEdit}
+          className="w-full rounded-2xl p-3 mb-3 text-right"
+          style={{ ...groupCardStyle, cursor: 'pointer' }}
+        >
+          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>پروفایل غرفه</span>
+        </button>
+
+        <button
+          onClick={onOpenJobSeekers}
+          className="w-full rounded-2xl p-3 mb-4 text-right"
+          style={{ ...groupCardStyle, cursor: 'pointer' }}
+        >
+          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>کارجویان</span>
         </button>
 
         <div className="grid grid-cols-3 gap-2 mb-4">

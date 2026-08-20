@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import BackButton from './BackButton'
 
-type Company = {
+export type Company = {
   id: string
   name: string
   hall: string
@@ -9,14 +9,14 @@ type Company = {
   popularity: number
 }
 
-const categoryLabel: Record<string, string> = {
+export const categoryLabel: Record<string, string> = {
   bank: 'بانک، اعتبار و پرداخت',
   capital: 'بازار سرمایه و سرمایه‌گذاری',
   insurance: 'بیمه و مدیریت ریسک',
   infra: 'زیرساخت، فناوری و نهادهای پشتیبان',
 }
 
-const companies: Company[] = [
+export const companiesDirectory: Company[] = [
   { id: 'c1', name: 'بانک ملت', hall: '۵', category: 'bank', popularity: 12 },
   { id: 'c2', name: 'بانک آینده', hall: '۱۵', category: 'bank', popularity: 30 },
   { id: 'c3', name: 'بانک صادرات', hall: '۵', category: 'bank', popularity: 8 },
@@ -30,6 +30,8 @@ const companies: Company[] = [
   { id: 'c11', name: 'فینوتک', hall: '۱۳-۱۴', category: 'infra', popularity: 9 },
   { id: 'c12', name: 'شاپرک', hall: '۱۳-۱۴', category: 'infra', popularity: 20 },
   { id: 'c13', name: 'شرکت پرداخت الکترونیک', hall: '۱۰', category: 'infra', popularity: 5 },
+  { id: 'c14', name: 'بیمه‌ی البرز', hall: '۷', category: 'insurance', popularity: 11 },
+  { id: 'c15', name: 'غرفه‌ی نمونه', hall: '۱', category: 'infra', popularity: 3 },
 ]
 
 const categories: { id: 'bank' | 'capital' | 'insurance' | 'infra'; label: string }[] = [
@@ -41,10 +43,16 @@ const categories: { id: 'bank' | 'capital' | 'insurance' | 'infra'; label: strin
 
 const glowShadow = '0 0 6px 1px rgba(190,156,119,0.5), 0 0 16px 4px rgba(190,156,119,0.3)'
 
-function Participants({ onBack }: { onBack: () => void }) {
+interface ParticipantsProps {
+  onBack: () => void
+  onOpenProfile: (companyName: string) => void
+  savedCompanyNames: Set<string>
+  onToggleSave: (companyName: string) => void
+}
+
+function Participants({ onBack, onOpenProfile, savedCompanyNames, onToggleSave }: ParticipantsProps) {
   const [search, setSearch] = useState('')
   const [activeCategories, setActiveCategories] = useState<string[]>([])
-  const [saved, setSaved] = useState<string[]>(['c2'])
   const [onlySaved, setOnlySaved] = useState(false)
   const [sortBy, setSortBy] = useState<'name' | 'popularity'>('name')
 
@@ -55,24 +63,21 @@ function Participants({ onBack }: { onBack: () => void }) {
   }
 
   const toggleSave = (c: Company) => {
-    setSaved((prev) => {
-      const isSaved = prev.includes(c.id)
-      if (!isSaved) {
-        alert('شرکت «' + c.name + '» به قرارهای من (و قرارهای غرفه‌دار) اضافه شد و نوتیفیکیشن برای هر دو طرف ارسال شد.')
-        return [...prev, c.id]
-      }
-      return prev.filter((id) => id !== c.id)
-    })
+    const wasSaved = savedCompanyNames.has(c.name)
+    onToggleSave(c.name)
+    if (!wasSaved) {
+      alert('«' + c.name + '» به لیست ذخیره‌شده‌های شما اضافه شد')
+    }
   }
 
   const shareCompany = (c: Company) => {
     alert('اطلاعات «' + c.name + '» برای اشتراک‌گذاری آماده شد (پیامک / واتس‌اپ)')
   }
 
-  let filtered = companies.filter((c) => {
+  let filtered = companiesDirectory.filter((c) => {
     const matchesCategory = activeCategories.length === 0 || activeCategories.includes(c.category)
     const matchesSearch = c.name.includes(search.trim())
-    const matchesSaved = !onlySaved || saved.includes(c.id)
+    const matchesSaved = !onlySaved || savedCompanyNames.has(c.name)
     return matchesCategory && matchesSearch && matchesSaved
   })
 
@@ -165,9 +170,13 @@ function Participants({ onBack }: { onBack: () => void }) {
             </div>
           )}
           {filtered.map((c) => {
-            const isSaved = saved.includes(c.id)
+            const isSaved = savedCompanyNames.has(c.name)
             return (
-              <div key={c.id} className="bg-white rounded-2xl px-3.5 py-3 flex items-center gap-2.5">
+              <button
+                key={c.id}
+                onClick={() => onOpenProfile(c.name)}
+                className="bg-white rounded-2xl px-3.5 py-3 flex items-center gap-2.5 text-right cursor-pointer"
+              >
                 <div
                   className="rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ width: '34px', height: '34px', background: '#f3e8dc' }}
@@ -184,25 +193,48 @@ function Participants({ onBack }: { onBack: () => void }) {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => shareCompany(c)}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    shareCompany(c)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.stopPropagation()
+                      shareCompany(c)
+                    }
+                  }}
                   className="rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ width: '30px', height: '30px', background: '#f3e8dc' }}
+                  style={{ width: '30px', height: '30px', background: '#f3e8dc', cursor: 'pointer' }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="1.8">
                     <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
                     <path d="M8.6 10.6l6.8-3.8M8.6 13.4l6.8 3.8" />
                   </svg>
-                </button>
+                </span>
 
-                <button
-                  onClick={() => toggleSave(c)}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleSave(c)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.stopPropagation()
+                      toggleSave(c)
+                    }
+                  }}
                   className="rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{
                     width: '34px',
                     height: '34px',
                     background: isSaved ? '#be9c77' : '#f3e8dc',
                     boxShadow: isSaved ? glowShadow : 'none',
+                    cursor: 'pointer',
                   }}
                 >
                   <svg
@@ -215,8 +247,8 @@ function Participants({ onBack }: { onBack: () => void }) {
                   >
                     <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
                   </svg>
-                </button>
-              </div>
+                </span>
+              </button>
             )
           })}
         </div>

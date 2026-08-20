@@ -15,6 +15,7 @@ function VisitorDashboard({
   onOpenMyAppointments,
   onOpenNotifications,
   onOpenBoothScan,
+  onOpenMyAccount,
   promotions,
   savedPromotionIds,
   onTogglePromotionSave,
@@ -30,6 +31,7 @@ function VisitorDashboard({
   onOpenMyAppointments: () => void
   onOpenNotifications: () => void
   onOpenBoothScan: () => void
+  onOpenMyAccount: () => void
   promotions: Promotion[]
   savedPromotionIds: Set<string>
   onTogglePromotionSave: (id: string) => void
@@ -271,7 +273,7 @@ function VisitorDashboard({
           </svg>
           <div className="text-[8.5px] mt-0.5" style={{ color: '#9b9baf' }}>اعلان‌ها</div>
         </button>
-        <button onClick={() => goTo('حساب من')} className="text-center cursor-pointer">
+        <button onClick={onOpenMyAccount} className="text-center cursor-pointer">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9b9baf" strokeWidth="2" className="mx-auto">
             <circle cx="12" cy="8" r="4" />
             <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
