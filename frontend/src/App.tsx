@@ -46,6 +46,7 @@ import MyAccount from './MyAccount'
 import CompanyProfile, { type CompanyProfileData } from './CompanyProfile'
 import ExhibitorProfile from './ExhibitorProfile'
 import ExhibitorJobSeekers, { type JobSeekerEntry } from './ExhibitorJobSeekers'
+import ExhibitorScanChoice from './ExhibitorScanChoice'
 
 type Step =
   | 'splash'
@@ -92,6 +93,8 @@ type Step =
   | 'companyProfile'
   | 'exhibitorProfileEdit'
   | 'exhibitorJobSeekers'
+  | 'exhibitorNetworkScan'
+  | 'exhibitorScanChoice'
 
 let ticketIdCounter = 214
 
@@ -336,6 +339,39 @@ function App() {
       },
       ...prev,
     ])
+  }
+
+  const createMeetingRequestFromExhibitorScan = (boothCompany: string) => {
+    if (boothCompany === exhibitorCompany) return
+
+    const newRequest: MeetingRequest = {
+      id: `mr-${Date.now()}`,
+      visitorName: name,
+      visitorCategory: (priorityCategories[0] as CategoryId) || '',
+      description: `درخواست ملاقات غرفه به غرفه از سوی «${exhibitorCompany}»`,
+      visitorPhone: mobile,
+      status: 'pending',
+      agreementNotes: '',
+      approvedByStaffName: '',
+      approvedAt: null,
+      boothCompany,
+      createdAt: Date.now(),
+      requesterType: 'exhibitor',
+      requesterCompany: exhibitorCompany,
+    }
+    setMeetingRequests((prev) => [...prev, newRequest])
+
+    const notifToTarget: ExhibitorInboxNotif = {
+      id: generateNotifId(),
+      title: 'درخواست ملاقات از غرفه‌ی دیگر',
+      body: `غرفه‌ی «${exhibitorCompany}» درخواست ملاقات ثبت کرد — از «قرارهای من» بررسی کنید`,
+      time: 'همین الان',
+      read: false,
+    }
+    setExhibitorInboxNotifs((prev) => ({
+      ...prev,
+      [boothCompany]: [notifToTarget, ...(prev[boothCompany] || [])],
+    }))
   }
 
   const cancelMeetingRequest = (id: string) => {
@@ -649,7 +685,7 @@ function App() {
         onOpenInvites={() => setStep('exhibitorInvites')}
         onOpenAppointments={() => setStep('exhibitorAppointments')}
         onOpenReport={() => setStep('exhibitorReport')}
-        onOpenScan={() => setStep('exhibitorScan')}
+        onOpenScan={() => setStep('exhibitorScanChoice')}
         onOpenNotifications={() => {
           setNotificationPrefill('')
           setStep('exhibitorNotifications')
@@ -695,6 +731,16 @@ function App() {
         scanLogs={scanLogs}
         setScanLogs={setScanLogs}
         staffName={name}
+        onBack={() => setStep('exhibitorScanChoice')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorScanChoice') {
+    return (
+      <ExhibitorScanChoice
+        onOpenNetworking={() => setStep('exhibitorNetworkScan')}
+        onOpenVisitorScan={() => setStep('exhibitorScan')}
         onBack={() => setStep('exhibitorHome')}
       />
     )
@@ -761,6 +807,7 @@ function App() {
         setRequests={setMeetingRequests}
         staffName={name}
         staffPhone={mobile}
+        myCompanyName={exhibitorCompany}
         agreements={agreements}
         setAgreements={setAgreements}
         onOpenAgreements={() => setStep('exhibitorAgreements')}
@@ -901,6 +948,21 @@ function App() {
         onActivateAccess={activateJobSeekerAccess}
         liveEntry={liveEntry}
         onBack={() => setStep('exhibitorHome')}
+      />
+    )
+  }
+
+  if (step === 'exhibitorNetworkScan') {
+    return (
+      <VisitorBoothScan
+        visitorName={name}
+        visitorPhone={mobile}
+        meetingRequests={meetingRequests}
+        onCreateRequest={createMeetingRequestFromExhibitorScan}
+        blockedCompanyName={exhibitorCompany}
+        title="قرار ملاقات با غرفه‌های دیگر"
+        subtitle="با اسکن QR غرفه‌ی موردنظر، درخواست ملاقات غرفه به غرفه ثبت می‌شود"
+        onBack={() => setStep('exhibitorScanChoice')}
       />
     )
   }

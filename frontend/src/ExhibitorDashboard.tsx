@@ -111,6 +111,12 @@ export default function ExhibitorDashboard({
     border: '1px solid rgba(255,255,255,0.05)',
   }
 
+  const tileStyle = {
+    background: 'rgba(190,156,119,0.15)',
+    border: '1.5px solid rgba(190,156,119,0.4)',
+    cursor: 'pointer' as const,
+  }
+
   let cumulativeOffset = 0
   const donutSegments = mockVisitBreakdown.map((seg) => {
     const len = (seg.percent / 100) * CIRCUMFERENCE
@@ -312,21 +318,8 @@ export default function ExhibitorDashboard({
         )}
 
         <button
-          onClick={onOpenInvites}
-          className="w-full rounded-2xl p-3 mb-3 text-right"
-          style={{ ...groupCardStyle, cursor: 'pointer' }}
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>ارسال کد دعوت</span>
-            <span className="text-[7.5px] mr-auto" style={{ color: '#8b8a95' }}>
-              {toFa(inviteRemaining)} / {toFa(inviteQuota)} باقی‌مانده
-            </span>
-          </div>
-        </button>
-
-        <button
           onClick={onOpenAppointments}
-          className="w-full rounded-2xl p-3 mb-3 flex items-center justify-between"
+          className="w-full rounded-2xl p-3 mb-4 flex items-center justify-between"
           style={{ ...groupCardStyle, cursor: 'pointer' }}
         >
           <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>قرارهای من</span>
@@ -342,89 +335,93 @@ export default function ExhibitorDashboard({
           )}
         </button>
 
-        <button
-          onClick={onOpenScan}
-          className="w-full rounded-2xl p-3 mb-3 text-right"
-          style={{ ...groupCardStyle, cursor: 'pointer' }}
-        >
-          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>ثبت اسکن بازدیدکننده</span>
-        </button>
+        <div className="text-[8.5px] font-bold mb-1.5 px-0.5" style={{ color: '#e8cfa8' }}>
+          ارتباط با بازدیدکنندگان و غرفه‌ها
+        </div>
+        <div className="grid grid-cols-3 gap-2 mb-3.5">
+          <button onClick={onOpenScan} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>اسکن QR</span>
+          </button>
+          <button onClick={onOpenBoothQr} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M9 21V9" />
+            </svg>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>QR غرفه</span>
+          </button>
+          <button onClick={onOpenNotifications} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>ارسال اعلان</span>
+          </button>
+        </div>
 
-        <button
-          onClick={onOpenBoothQr}
-          className="w-full rounded-2xl p-3 mb-3 text-right"
-          style={{ ...groupCardStyle, cursor: 'pointer' }}
-        >
-          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>نمایش QR غرفه</span>
-        </button>
-
-        <button
-          onClick={onOpenNotifications}
-          className="w-full rounded-2xl p-3 mb-3 text-right"
-          style={{ ...groupCardStyle, cursor: 'pointer' }}
-        >
-          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>ارسال اعلان به بازدیدکنندگان</span>
-        </button>
-
-        <button
-          onClick={onOpenReport}
-          className="w-full rounded-2xl p-3 mb-3 text-right"
-          style={{ ...groupCardStyle, cursor: 'pointer' }}
-        >
-          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>گزارش نهایی غرفه</span>
-        </button>
-
-        <button
-          onClick={onOpenProfileEdit}
-          className="w-full rounded-2xl p-3 mb-3 text-right"
-          style={{ ...groupCardStyle, cursor: 'pointer' }}
-        >
-          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>پروفایل غرفه</span>
-        </button>
-
-        <button
-          onClick={onOpenJobSeekers}
-          className="w-full rounded-2xl p-3 mb-4 text-right"
-          style={{ ...groupCardStyle, cursor: 'pointer' }}
-        >
-          <span className="text-[9px] font-bold" style={{ color: '#be9c77' }}>کارجویان</span>
-        </button>
-
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <button
-            onClick={onOpenProducts}
-            className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex flex-col items-center justify-center gap-1"
-            style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1b2134" strokeWidth="1.8">
+        <div className="text-[8.5px] font-bold mb-1.5 px-0.5" style={{ color: '#e8cfa8' }}>
+          محتوای غرفه
+        </div>
+        <div className="grid grid-cols-3 gap-2 mb-3.5">
+          <button onClick={onOpenProducts} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
               <path d="M21 8L12 3 3 8l9 5 9-5z" />
               <path d="M3 8v8l9 5 9-5V8" />
               <path d="M12 13v8" />
             </svg>
-            محصولات
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>محصولات</span>
           </button>
-          <button
-            onClick={onOpenPanels}
-            className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex flex-col items-center justify-center gap-1"
-            style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+          <button onClick={onOpenPanels} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
               <rect x="9" y="2" width="6" height="12" rx="3" />
               <path d="M5 10v1a7 7 0 0014 0v-1M12 18v4M9 22h6" />
             </svg>
-            پنل‌ها
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>پنل‌ها</span>
           </button>
-          <button
-            onClick={onOpenPromotions}
-            className="w-full rounded-xl py-3.5 font-bold text-[10.5px] flex flex-col items-center justify-center gap-1"
-            style={{ background: 'rgba(190,156,119,0.15)', color: '#e8cfa8', border: '1.5px solid rgba(190,156,119,0.4)', cursor: 'pointer' }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+          <button onClick={onOpenProfileEdit} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+            </svg>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>پروفایل غرفه</span>
+          </button>
+        </div>
+
+        <div className="text-[8.5px] font-bold mb-1.5 px-0.5" style={{ color: '#e8cfa8' }}>
+          بازاریابی و گزارش
+        </div>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <button onClick={onOpenPromotions} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
               <rect x="3" y="8" width="18" height="4" rx="1" />
               <path d="M12 8v13M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
               <path d="M12 8c-1.5-3-5-4-5-1.5S9.5 8 12 8zM12 8c1.5-3 5-4 5-1.5S14.5 8 12 8z" />
             </svg>
-            پروموشن
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>پروموشن</span>
+          </button>
+          <button onClick={onOpenReport} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <path d="M9 12l2 2 4-4" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>گزارش نهایی</span>
+          </button>
+          <button onClick={onOpenJobSeekers} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2" />
+              <circle cx="10" cy="7" r="4" />
+            </svg>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>کارجویان</span>
+          </button>
+          <button onClick={onOpenInvites} className="col-span-3 rounded-xl py-2.5 px-3 flex items-center justify-between" style={tileStyle}>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>ارسال کد دعوت</span>
+            <span className="text-[7.5px]" style={{ color: '#8b8a95' }}>
+              {toFa(inviteRemaining)} / {toFa(inviteQuota)} باقی‌مانده
+            </span>
           </button>
         </div>
 
