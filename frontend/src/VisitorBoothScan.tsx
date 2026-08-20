@@ -10,12 +10,18 @@ export default function VisitorBoothScan({
   meetingRequests,
   onCreateRequest,
   onBack,
+  blockedCompanyName,
+  title,
+  subtitle,
 }: {
   visitorName: string
   visitorPhone: string
   meetingRequests: MeetingRequest[]
   onCreateRequest: (boothCompany: string) => void
   onBack: () => void
+  blockedCompanyName?: string
+  title?: string
+  subtitle?: string
 }) {
   void visitorName
 
@@ -24,7 +30,7 @@ export default function VisitorBoothScan({
   const [cameraActive, setCameraActive] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
-  const [phase, setPhase] = useState<'idle' | 'loading' | 'success' | 'duplicate'>('idle')
+  const [phase, setPhase] = useState<'idle' | 'loading' | 'success' | 'duplicate' | 'blocked'>('idle')
   const [resultCompany, setResultCompany] = useState('')
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -44,6 +50,12 @@ export default function VisitorBoothScan({
     const company = raw.trim()
     if (!company) return
     stopCamera()
+
+    if (blockedCompanyName && company === blockedCompanyName) {
+      setResultCompany(company)
+      setPhase('blocked')
+      return
+    }
 
     if (alreadyPendingFor(company)) {
       setResultCompany(company)
@@ -178,9 +190,9 @@ export default function VisitorBoothScan({
       ></div>
 
       <div className="relative z-10 mt-6">
-        <PageTitle>اسکن QR Code غرفه</PageTitle>
+        <PageTitle>{title || 'اسکن QR Code غرفه'}</PageTitle>
         <p className="text-[10px] text-center mb-4" style={{ color: '#9b9baf' }}>
-          با اسکن QR غرفه، درخواست ملاقات برای شما و غرفه‌دار ثبت می‌شود
+          {subtitle || 'با اسکن QR غرفه، درخواست ملاقات برای شما و غرفه‌دار ثبت می‌شود'}
         </p>
 
         {phase === 'idle' && (
@@ -368,6 +380,30 @@ export default function VisitorBoothScan({
               قبلاً برای «{resultCompany}» درخواست دادی
             </p>
             <p className="text-[10.5px]" style={{ color: '#9b9baf' }}>منتظر تایید غرفه‌دار باش — نیازی به اسکن دوباره نیست</p>
+            <button
+              onClick={resetToIdle}
+              className="mt-5 rounded-full px-5 py-2 text-[10px]"
+              style={{ background: 'transparent', color: '#9b9baf', border: '1px solid #3a3f52', cursor: 'pointer' }}
+            >
+              بازگشت
+            </button>
+          </div>
+        )}
+
+        {phase === 'blocked' && (
+          <div className="flex flex-col items-center justify-center py-14 gap-2 text-center">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(217,83,79,0.12)' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d9534f" strokeWidth="1.8">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </div>
+            <p className="text-[12.5px] font-bold mt-2" style={{ color: '#fff' }}>
+              این QR غرفه‌ی خود شماست
+            </p>
+            <p className="text-[10.5px]" style={{ color: '#9b9baf' }}>برای ثبت درخواست، QR یکی دیگر از غرفه‌ها را اسکن کنید</p>
             <button
               onClick={resetToIdle}
               className="mt-5 rounded-full px-5 py-2 text-[10px]"

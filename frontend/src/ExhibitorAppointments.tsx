@@ -31,10 +31,8 @@ export interface MeetingRequest {
   agreementFileUrl?: string | null
   agreementFileName?: string | null
   agreementFileIsImage?: boolean
-}
-
-function initials(name: string) {
-  return name.trim().slice(0, 2)
+  requesterType?: 'visitor' | 'exhibitor'
+  requesterCompany?: string
 }
 
 function formatDate(ts: number) {
@@ -50,6 +48,7 @@ export default function ExhibitorAppointments({
   setRequests,
   staffName,
   staffPhone,
+  myCompanyName,
   agreements,
   setAgreements,
   onOpenAgreements,
@@ -60,6 +59,7 @@ export default function ExhibitorAppointments({
   setRequests: React.Dispatch<React.SetStateAction<MeetingRequest[]>>
   staffName: string
   staffPhone: string
+  myCompanyName: string
   agreements: Agreement[]
   setAgreements: React.Dispatch<React.SetStateAction<Agreement[]>>
   onOpenAgreements: () => void
@@ -68,6 +68,7 @@ export default function ExhibitorAppointments({
 }) {
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
 const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'visitor' | 'exhibitor'>('all')
   const syncLinkedAgreement = (updated: MeetingRequest) => {
     const linkedId = linkedAgreementId(updated.id)
     setAgreements((prev) => {
@@ -149,9 +150,49 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
 
   void agreements
 
-  const pending = requests.filter((r) => r.status === 'pending')
-  const approved = requests.filter((r) => r.status === 'approved')
-  const declined = requests.filter((r) => r.status === 'declined')
+  const isFromExhibitor = (r: MeetingRequest) => r.requesterType === 'exhibitor'
+
+  const visitorRequestsCount = requests.filter((r) => !isFromExhibitor(r)).length
+  const exhibitorRequestsCount = requests.filter((r) => isFromExhibitor(r)).length
+
+  const incoming = requests.filter((r) => {
+    if (sourceFilter === 'visitor') return !isFromExhibitor(r)
+    if (sourceFilter === 'exhibitor') return isFromExhibitor(r)
+    return true
+  })
+
+  const pending = incoming.filter((r) => r.status === 'pending')
+  const approved = incoming.filter((r) => r.status === 'approved')
+  const declined = incoming.filter((r) => r.status === 'declined')
+
+  const sourceBadge = (r: MeetingRequest) =>
+    isFromExhibitor(r)
+      ? { label: 'از طرف غرفه', bg: '#6b4d8a' }
+      : { label: 'از طرف بازدیدکننده', bg: '#8a6d4d' }
+
+  const sourceIcon = (r: MeetingRequest) =>
+    isFromExhibitor(r) ? (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b4d8a" strokeWidth="1.8">
+        <path d="M3 21h18M4 21V9l8-5 8 5v12M9 21v-6h6v6" />
+      </svg>
+    ) : (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a6d4d" strokeWidth="1.8">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+      </svg>
+    )
+
+  const sentByMe = requests.filter((r) => r.requesterType === 'exhibitor' && r.requesterCompany === myCompanyName)
+  const sentStatusLabel: Record<MeetingRequest['status'], string> = {
+    pending: 'در انتظار بررسی',
+    approved: 'تایید شد',
+    declined: 'رد شد',
+  }
+  const sentStatusColor: Record<MeetingRequest['status'], string> = {
+    pending: '#be9c77',
+    approved: '#3f6b4d',
+    declined: '#c76b5f',
+  }
 
   const fieldClass = 'w-full rounded-lg px-2.5 py-2 text-[9.5px] outline-none'
   const fieldStyle = { border: '1px solid #eee', color: '#1b2134' }
@@ -170,6 +211,36 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
       <div className="relative z-10 mt-6">
         <PageTitle>قرارهای من</PageTitle>
 
+        <div className="flex gap-1 rounded-full p-1 mb-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <button
+            onClick={() => setSourceFilter('all')}
+            className="flex-1 rounded-full py-1.5 text-[9.5px] font-bold"
+            style={{ background: sourceFilter === 'all' ? '#be9c77' : 'transparent', color: sourceFilter === 'all' ? '#1b2134' : '#e8cfa8', border: 'none', cursor: 'pointer' }}
+          >
+            همه ({requests.length.toLocaleString('fa-IR')})
+          </button>
+          <button
+            onClick={() => setSourceFilter('visitor')}
+            className="flex-1 rounded-full py-1.5 text-[9.5px] font-bold"
+            style={{ background: sourceFilter === 'visitor' ? '#be9c77' : 'transparent', color: sourceFilter === 'visitor' ? '#1b2134' : '#e8cfa8', border: 'none', cursor: 'pointer' }}
+          >
+            بازدیدکنندگان ({visitorRequestsCount.toLocaleString('fa-IR')})
+          </button>
+          <button
+            onClick={() => setSourceFilter('exhibitor')}
+            className="flex-1 rounded-full py-1.5 text-[9.5px] font-bold"
+            style={{ background: sourceFilter === 'exhibitor' ? '#be9c77' : 'transparent', color: sourceFilter === 'exhibitor' ? '#1b2134' : '#e8cfa8', border: 'none', cursor: 'pointer' }}
+          >
+            غرفه‌داران ({exhibitorRequestsCount.toLocaleString('fa-IR')})
+          </button>
+        </div>
+
+        {requests.length > 0 && (
+          <div className="text-[8px] text-center mb-4" style={{ color: '#6f6e78' }}>
+            {visitorRequestsCount.toLocaleString('fa-IR')} از بازدیدکنندگان · {exhibitorRequestsCount.toLocaleString('fa-IR')} از غرفه‌ها
+          </div>
+        )}
+
         <button
           onClick={onOpenAgreements}
           className="w-full rounded-xl px-3.5 py-2.5 mb-4 flex items-center justify-between"
@@ -181,9 +252,36 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
           </svg>
         </button>
 
+        {sentByMe.length > 0 && (
+          <>
+            <div className="text-[10px] font-bold mb-2" style={{ color: '#e8cfa8' }}>
+              درخواست‌های ارسالی من به سایر غرفه‌ها ({sentByMe.length.toLocaleString('fa-IR')})
+            </div>
+            <div className="flex flex-col gap-2 mb-5">
+              {sentByMe.map((r) => (
+                <div key={r.id} className="bg-white rounded-xl px-3.5 py-2.5 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.boothCompany}</span>
+                    <div className="text-[8px] mt-0.5" style={{ color: '#9b9baf' }}>{formatDate(r.createdAt)}</div>
+                  </div>
+                  <span className="text-[8.5px] font-bold" style={{ color: sentStatusColor[r.status] }}>
+                    {sentStatusLabel[r.status]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         {requests.length === 0 && (
           <p className="text-[11px] text-center mb-4" style={{ color: '#9b9baf' }}>
             هنوز درخواستی دریافت نکرده‌اید
+          </p>
+        )}
+
+        {requests.length > 0 && incoming.length === 0 && (
+          <p className="text-[11px] text-center mb-4" style={{ color: '#9b9baf' }}>
+            درخواستی در این دسته یافت نشد
           </p>
         )}
 
@@ -195,18 +293,26 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
             <div className="flex flex-col gap-2.5 mb-5">
               {pending.map((r) => {
                 const cat = categoryInfo(r.visitorCategory)
+                const displayName = r.requesterCompany || r.visitorName
+                const badge = sourceBadge(r)
                 return (
                   <div key={r.id} className="bg-white rounded-2xl p-3.5">
                     <div className="flex items-center gap-2 mb-2">
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                        style={{ background: cat?.color || '#f3e8dc', color: cat?.text || '#8a6d4d' }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: isFromExhibitor(r) ? '#eee2f2' : '#f3e8dc' }}
                       >
-                        {initials(r.visitorName)}
+                        {sourceIcon(r)}
                       </div>
                       <div className="flex-1">
-                        <div className="text-[11px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</div>
+                        <div className="text-[11px] font-bold" style={{ color: '#1b2134' }}>{displayName}</div>
                         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          <span
+                            className="inline-block text-[7.5px] font-bold px-1.5 py-0.5 rounded-md"
+                            style={{ background: badge.bg, color: '#fff' }}
+                          >
+                            {badge.label}
+                          </span>
                           {r.boothCompany && (
                             <span
                               className="inline-block text-[7.5px] font-bold px-1.5 py-0.5 rounded-md"
@@ -265,11 +371,21 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
                 const agrStatus = r.agreementStatus || 'negotiating'
                 const st = agreementStatusInfo[agrStatus]
                 const agrCat = categoryInfo(r.agreementCategory || '')
+                const displayName = r.requesterCompany || r.visitorName
+                const badge = sourceBadge(r)
                 return (
                   <div key={r.id} className="bg-white rounded-2xl p-3.5">
                     <div className="flex items-center justify-between mb-2.5">
                       <div>
-                        <span className="text-[11px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                        <span className="text-[11px] font-bold" style={{ color: '#1b2134' }}>{displayName}</span>
+                        <div className="mt-1">
+                          <span
+                            className="inline-block text-[7.5px] font-bold px-1.5 py-0.5 rounded-md"
+                            style={{ background: badge.bg, color: '#fff' }}
+                          >
+                            {badge.label}
+                          </span>
+                        </div>
                         {r.boothCompany && (
                           <div className="text-[8px] mt-0.5" style={{ color: '#9b9baf' }}>غرفه: {r.boothCompany}</div>
                         )}
@@ -417,13 +533,23 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
               رد شده ({declined.length.toLocaleString('fa-IR')})
             </div>
             <div className="flex flex-col gap-2 mb-2">
-              {declined.map((r) => (
+              {declined.map((r) => {
+                const badge = sourceBadge(r)
+                return (
                 <div key={r.id} className="bg-white rounded-xl px-3.5 py-2.5" style={{ opacity: 0.85 }}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.visitorName}</span>
+                      <span className="text-[10.5px] font-bold" style={{ color: '#1b2134' }}>{r.requesterCompany || r.visitorName}</span>
+                      <div className="mt-1">
+                        <span
+                          className="inline-block text-[7.5px] font-bold px-1.5 py-0.5 rounded-md"
+                          style={{ background: badge.bg, color: '#fff' }}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
                       {r.boothCompany && (
-                        <div className="text-[8px] mt-0.5" style={{ color: '#9b9baf' }}>غرفه: {r.boothCompany}</div>
+                        <div className="text-[8px] mt-1" style={{ color: '#9b9baf' }}>غرفه: {r.boothCompany}</div>
                       )}
                     </div>
                     <span className="text-[8px] font-bold" style={{ color: '#c76b5f' }}>رد شده</span>
@@ -436,7 +562,8 @@ const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({})
                     اشتباه رد شده؟ تایید کن
                   </button>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </>
         )}
