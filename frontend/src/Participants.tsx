@@ -44,13 +44,14 @@ const categories: { id: 'bank' | 'capital' | 'insurance' | 'infra'; label: strin
 const glowShadow = '0 0 6px 1px rgba(190,156,119,0.5), 0 0 16px 4px rgba(190,156,119,0.3)'
 
 interface ParticipantsProps {
+  companies: Company[]
   onBack: () => void
   onOpenProfile: (companyName: string) => void
   savedCompanyNames: Set<string>
   onToggleSave: (companyName: string) => void
 }
 
-function Participants({ onBack, onOpenProfile, savedCompanyNames, onToggleSave }: ParticipantsProps) {
+function Participants({ companies, onBack, onOpenProfile, savedCompanyNames, onToggleSave }: ParticipantsProps) {
   const [search, setSearch] = useState('')
   const [activeCategories, setActiveCategories] = useState<string[]>([])
   const [onlySaved, setOnlySaved] = useState(false)
@@ -74,7 +75,7 @@ function Participants({ onBack, onOpenProfile, savedCompanyNames, onToggleSave }
     alert('اطلاعات «' + c.name + '» برای اشتراک‌گذاری آماده شد (پیامک / واتس‌اپ)')
   }
 
-  let filtered = companiesDirectory.filter((c) => {
+  let filtered = companies.filter((c) => {
     const matchesCategory = activeCategories.length === 0 || activeCategories.includes(c.category)
     const matchesSearch = c.name.includes(search.trim())
     const matchesSaved = !onlySaved || savedCompanyNames.has(c.name)

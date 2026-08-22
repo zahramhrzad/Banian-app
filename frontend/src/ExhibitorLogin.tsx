@@ -13,9 +13,11 @@ export const demoExhibitorCodes: Record<string, string> = {
 const NAME_STORAGE_KEY = 'banian_exhibitor_name'
 
 function ExhibitorLogin({
+  extraCodes,
   onSubmit,
   onBack,
 }: {
+  extraCodes: Record<string, string>
   onSubmit: (name: string, mobile: string, trackingCode: string, companyName: string) => void
   onBack: () => void
 }) {
@@ -52,7 +54,8 @@ function ExhibitorLogin({
     if (!isValid || status === 'success') return
 
     const code = password.trim().toUpperCase()
-    const matchedCompany = demoExhibitorCodes[code]
+    const allCodes = { ...demoExhibitorCodes, ...extraCodes }
+    const matchedCompany = allCodes[code]
 
     if (!matchedCompany) {
       setStatus('error')

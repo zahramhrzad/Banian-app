@@ -43,6 +43,7 @@ function points(values: number[]) {
 }
 
 const navSections = [
+  { key: 'exhibitors', label: 'مدیریت غرفه‌داران' },
   { key: 'registrants', label: 'ثبت‌نامی‌ها' },
   { key: 'dataEntry', label: 'پیشخوان Data Entry' },
   { key: 'promotions', label: 'پروموشن‌ها' },
@@ -69,6 +70,7 @@ export default function AdminDashboard({
   onOpenScans,
   onOpenQualityForm,
   onOpenUsers,
+  onOpenExhibitors,
   onLogout,
 }: {
   displayName: string
@@ -86,6 +88,7 @@ export default function AdminDashboard({
   onOpenScans: () => void
   onOpenQualityForm: () => void
   onOpenUsers: () => void
+  onOpenExhibitors: () => void
   onLogout: () => void
 }) {
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
@@ -304,6 +307,7 @@ export default function AdminDashboard({
                 else if (s.key === 'scans') onOpenScans()
                 else if (s.key === 'qualityForm') onOpenQualityForm()
                 else if (s.key === 'users') onOpenUsers()
+                else if (s.key === 'exhibitors') onOpenExhibitors()
                 else alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`)
               }}
             >

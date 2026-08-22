@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
 import { categories, categoryInfo, type CategoryId } from './ExhibitorProducts'
+import type { ExhibitorAccount } from './AdminExhibitors'
 
 type Tab = 'visitors' | 'exhibitors'
 type SortMode = 'newest' | 'alphabetical' | 'category'
@@ -30,7 +31,7 @@ interface MockExhibitor {
   id: string
   companyName: string
   code: string
-  category: CategoryId
+  category: CategoryId | ''
   contactPhone: string
   staffName: string
   approvalStatus: 'active' | 'pending'
@@ -77,6 +78,32 @@ const mockExhibitors: MockExhibitor[] = [
   { id: 'e3', companyName: 'بیمه‌ی البرز', code: 'EXH-3000', category: 'insurance', contactPhone: '09123330000', staffName: 'سمیه', approvalStatus: 'pending', productsCount: 0, panelsCount: 0, agreementsCount: 0, registeredAt: Date.now() - 3600000 * 6 },
 ]
 
+const KNOWN_CATEGORY_IDS: CategoryId[] = ['bank', 'capital', 'insurance', 'infra']
+
+function toMockExhibitor(a: ExhibitorAccount): MockExhibitor {
+  const category: CategoryId | '' = (KNOWN_CATEGORY_IDS as string[]).includes(a.category)
+    ? (a.category as CategoryId)
+    : ''
+  return {
+    id: a.code,
+    companyName: a.companyName,
+    code: a.code,
+    category,
+    contactPhone: a.registeredPhone ? '0' + a.registeredPhone : '—',
+    staffName: a.ceoName || '—',
+    approvalStatus: 'active',
+    productsCount: 0,
+    panelsCount: 0,
+    agreementsCount: 0,
+    registeredAt: a.createdAt ?? Date.now(),
+  }
+}
+
+function buildExhibitorsList(adminExhibitors: ExhibitorAccount[]): MockExhibitor[] {
+  const adminCodes = new Set(adminExhibitors.map((a) => a.code))
+  return [...mockExhibitors.filter((e) => !adminCodes.has(e.code)), ...adminExhibitors.map(toMockExhibitor)]
+}
+
 const PAGE_SIZE = 4
 
 function formatDate(ts: number) {
@@ -99,7 +126,13 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url)
 }
 
-export default function AdminRegistrants({ onBack }: { onBack: () => void }) {
+export default function AdminRegistrants({
+  adminExhibitors,
+  onBack,
+}: {
+  adminExhibitors: ExhibitorAccount[]
+  onBack: () => void
+}) {
   const [tab, setTab] = useState<Tab>('visitors')
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<CategoryId | ''>('')
@@ -107,7 +140,7 @@ export default function AdminRegistrants({ onBack }: { onBack: () => void }) {
   const [sortMode, setSortMode] = useState<SortMode>('newest')
   const [page, setPage] = useState(1)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [exhibitors, setExhibitors] = useState(mockExhibitors)
+  const [exhibitors, setExhibitors] = useState(() => buildExhibitorsList(adminExhibitors))
 
   const filteredVisitors = useMemo(() => {
     let list = mockVisitors.filter(

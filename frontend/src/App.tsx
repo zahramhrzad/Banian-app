@@ -22,6 +22,7 @@ import AdminDataEntry from './AdminDataEntry'
 import AdminPromotions from './AdminPromotions'
 import AdminUsers from './AdminUsers'
 import AdminPromotionRequests from './AdminPromotionRequests'
+import AdminExhibitors, { type ExhibitorAccount } from './AdminExhibitors'
 import AdminNotifications, { type AdminNotificationEntry } from './AdminNotifications'
 import ExhibitorNotifications, { type ExhibitorNotificationEntry } from './ExhibitorNotifications'
 import AdminScans from './AdminScans'
@@ -38,7 +39,7 @@ import type { Ticket } from './TicketCard'
 import VisitorDashboard from './VisitorDashboard'
 import MapAccess from './MapAccess'
 import AccessInfo from './AccessInfo'
-import Participants, { companiesDirectory } from './Participants'
+import Participants, { companiesDirectory, type Company } from './Participants'
 import Panels from './Panels'
 import MyAppointments from './MyAppointments'
 import Notifications, { type VisitorNotif, initialVisitorNotifs } from './Notifications'
@@ -82,6 +83,7 @@ type Step =
   | 'adminPromotions'
   | 'adminPromotionRequests'
   | 'adminUsers'
+  | 'adminExhibitors'
   | 'adminNotifications'
   | 'adminQualityForm'
   | 'exhibitorNotifications'
@@ -113,9 +115,6 @@ function generateNotifId() {
   notifIdCounter += 1
   return `qf-${notifIdCounter}`
 }
-
-// لیست یکتای غرفه‌داران از روی کدهای دمو — در فاز اتصال Supabase از جدول companies خوانده می‌شود
-const companyList = Array.from(new Set(Object.values(demoExhibitorCodes)))
 
 const emptyRegistrationData: RegistrationData = {
   fullName: '',
@@ -210,7 +209,22 @@ function App() {
   const [savedCompanyNames, setSavedCompanyNames] = useState<Set<string>>(new Set(['بانک آینده']))
   const [exhibitorJobSeekerAccess, setExhibitorJobSeekerAccess] = useState<Record<string, boolean>>({})
   const [viewingCompany, setViewingCompany] = useState('')
+  const [adminExhibitorAccounts, setAdminExhibitorAccounts] = useState<ExhibitorAccount[]>([])
   void visitGoals
+
+  // لیست یکتای غرفه‌داران از روی کدهای دمو + غرفه‌دارانی که ادمین اضافه کرده
+  const companyList = Array.from(
+    new Set([...Object.values(demoExhibitorCodes), ...adminExhibitorAccounts.map((a) => a.companyName)])
+  )
+
+  const extraExhibitorCodes = Object.fromEntries(adminExhibitorAccounts.map((a) => [a.code, a.companyName]))
+
+  const mergedCompanies: Company[] = [
+    ...companiesDirectory,
+    ...adminExhibitorAccounts
+      .filter((a) => !companiesDirectory.some((c) => c.name === a.companyName))
+      .map((a) => ({ id: a.code, name: a.companyName, hall: a.hall, category: a.category, popularity: 0 })),
+  ]
 
   const emptyCompanyProfile: CompanyProfileData = { bio: '', products: '', website: '', phone: '', achievements: '' }
 
@@ -448,6 +462,7 @@ function App() {
         onOpenScans={() => setStep('adminScans')}
         onOpenQualityForm={() => setStep('adminQualityForm')}
         onOpenUsers={() => setStep('adminUsers')}
+        onOpenExhibitors={() => setStep('adminExhibitors')}
         onLogout={() => {
           setAdminDisplayName('')
           setAdminUsername('')
@@ -463,6 +478,18 @@ function App() {
         accounts={adminAccounts}
         setAccounts={setAdminAccounts}
         currentUsername={adminUsername}
+        onLogActivity={logAdminActivity}
+        onBack={() => setStep('adminDashboard')}
+      />
+    )
+  }
+
+  if (step === 'adminExhibitors') {
+    return (
+      <AdminExhibitors
+        accounts={adminExhibitorAccounts}
+        setAccounts={setAdminExhibitorAccounts}
+        existingCodes={demoExhibitorCodes}
         onLogActivity={logAdminActivity}
         onBack={() => setStep('adminDashboard')}
       />
@@ -498,7 +525,7 @@ function App() {
   }
 
   if (step === 'adminRegistrants') {
-    return <AdminRegistrants onBack={() => setStep('adminDashboard')} />
+    return <AdminRegistrants adminExhibitors={adminExhibitorAccounts} onBack={() => setStep('adminDashboard')} />
   }
 
   if (step === 'adminDataEntry') {
@@ -564,6 +591,7 @@ function App() {
     if (userType === 'exhibitor') {
       return (
         <ExhibitorLogin
+          extraCodes={extraExhibitorCodes}
           onSubmit={(n, m, code, company) => {
             setName(n)
             setMobile(m)
@@ -876,6 +904,7 @@ function App() {
   if (step === 'participants') {
     return (
       <Participants
+        companies={mergedCompanies}
         onBack={() => setStep('dashboard')}
         onOpenProfile={openCompanyProfile}
         savedCompanyNames={savedCompanyNames}
@@ -938,7 +967,7 @@ function App() {
   if (step === 'companyProfile') {
     return (
       <CompanyProfile
-        company={companiesDirectory.find((c) => c.name === viewingCompany)}
+        company={mergedCompanies.find((c) => c.name === viewingCompany)}
         companyName={viewingCompany}
         profile={companyProfiles[viewingCompany]}
         isSaved={savedCompanyNames.has(viewingCompany)}
@@ -956,7 +985,7 @@ function App() {
     return (
       <ExhibitorProfile
         companyName={exhibitorCompany}
-        company={companiesDirectory.find((c) => c.name === exhibitorCompany)}
+        company={mergedCompanies.find((c) => c.name === exhibitorCompany)}
         profile={companyProfiles[exhibitorCompany] || emptyCompanyProfile}
         onSave={(patch) => saveCompanyProfile(exhibitorCompany, patch)}
         onBack={() => setStep('exhibitorHome')}
