@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import BackButton from './BackButton'
 import type { MapPin } from './MapPin'
+import mapImage from './assets/exhibition-map.jpg'
 
 interface MapAccessProps {
   onBack: () => void
@@ -8,14 +9,102 @@ interface MapAccessProps {
   onOpenProfile: (company: string) => void
 }
 
+const MIN_ZOOM = 1
+const MAX_ZOOM = 3.5
+
+type Pan = { x: number; y: number }
+
+function clampPan(pan: Pan, zoom: number, wrapEl: HTMLDivElement | null): Pan {
+  if (!wrapEl) return pan
+  const rect = wrapEl.getBoundingClientRect()
+  const maxX = (rect.width * (zoom - 1)) / 2
+  const maxY = (rect.height * (zoom - 1)) / 2
+  return {
+    x: Math.min(maxX, Math.max(-maxX, pan.x)),
+    y: Math.min(maxY, Math.max(-maxY, pan.y)),
+  }
+}
+
+function touchDistance(t: React.TouchList) {
+  const dx = t[0].clientX - t[1].clientX
+  const dy = t[0].clientY - t[1].clientY
+  return Math.sqrt(dx * dx + dy * dy)
+}
+
 function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
   const [search, setSearch] = useState('')
-  const [zoom, setZoom] = useState(1)
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
+  const [zoom, setZoom] = useState(MIN_ZOOM)
+  const [pan, setPan] = useState<Pan>({ x: 0, y: 0 })
+  const [isInteracting, setIsInteracting] = useState(false)
+
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const drag = useRef({ active: false, startX: 0, startY: 0, startPan: { x: 0, y: 0 } as Pan })
+  const pinch = useRef({ active: false, startDist: 0, startZoom: MIN_ZOOM })
 
   const query = search.trim()
   const matchingPinId = query ? pins.find((p) => p.companyName.includes(query))?.id || null : null
   const filteredListPins = query ? pins.filter((p) => p.companyName.includes(query)) : pins
+
+  const applyZoom = (nextZoom: number) => {
+    const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom))
+    setZoom(z)
+    setPan((prev) => (z === MIN_ZOOM ? { x: 0, y: 0 } : clampPan(prev, z, wrapRef.current)))
+  }
+
+  const resetView = () => {
+    setZoom(MIN_ZOOM)
+    setPan({ x: 0, y: 0 })
+  }
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (zoom === MIN_ZOOM) return
+    setIsInteracting(true)
+    drag.current = { active: true, startX: e.clientX, startY: e.clientY, startPan: pan }
+  }
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!drag.current.active) return
+    const dx = e.clientX - drag.current.startX
+    const dy = e.clientY - drag.current.startY
+    setPan(clampPan({ x: drag.current.startPan.x + dx, y: drag.current.startPan.y + dy }, zoom, wrapRef.current))
+  }
+  const endMouseDrag = () => {
+    drag.current.active = false
+    setIsInteracting(false)
+  }
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      pinch.current = { active: true, startDist: touchDistance(e.touches), startZoom: zoom }
+      drag.current.active = false
+      setIsInteracting(true)
+    } else if (e.touches.length === 1 && zoom > MIN_ZOOM) {
+      drag.current = { active: true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startPan: pan }
+      setIsInteracting(true)
+    }
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (pinch.current.active && e.touches.length === 2) {
+      const dist = touchDistance(e.touches)
+      applyZoom(pinch.current.startZoom * (dist / pinch.current.startDist))
+    } else if (drag.current.active && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - drag.current.startX
+      const dy = e.touches[0].clientY - drag.current.startY
+      setPan(clampPan({ x: drag.current.startPan.x + dx, y: drag.current.startPan.y + dy }, zoom, wrapRef.current))
+    }
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) pinch.current.active = false
+    if (e.touches.length === 0) {
+      drag.current.active = false
+      setIsInteracting(false)
+    }
+  }
+
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    applyZoom(zoom - e.deltaY * 0.0015 * zoom)
+  }
 
   return (
     <div
@@ -65,53 +154,63 @@ function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
 
         {viewMode === 'map' ? (
           <div className="bg-white rounded-2xl p-3 mb-4">
-            <div className="flex justify-end gap-2 mb-2">
-              <button
-                onClick={() => setZoom((z) => Math.min(z + 0.2, 2))}
-                className="w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold"
-                style={{ background: '#f3e8dc', color: '#1b2134' }}
-              >
-                +
-              </button>
-              <button
-                onClick={() => setZoom((z) => Math.max(z - 0.2, 0.7))}
-                className="w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold"
-                style={{ background: '#f3e8dc', color: '#1b2134' }}
-              >
-                −
-              </button>
+            <div className="flex justify-between items-center mb-2">
+              <span style={{ fontSize: 8, color: '#9b9baf' }}>برای زوم: اسکرول یا پینچ · برای جابه‌جایی: درگ</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => applyZoom(zoom + 0.4)}
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold"
+                  style={{ background: '#f3e8dc', color: '#1b2134' }}
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => applyZoom(zoom - 0.4)}
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold"
+                  style={{ background: '#f3e8dc', color: '#1b2134' }}
+                >
+                  −
+                </button>
+              </div>
             </div>
 
-            <div style={{ overflow: 'hidden', borderRadius: '10px' }}>
+            <div
+              ref={wrapRef}
+              onMouseDown={onMouseDown}
+              onMouseMove={onMouseMove}
+              onMouseUp={endMouseDrag}
+              onMouseLeave={endMouseDrag}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onWheel={onWheel}
+              onDoubleClick={resetView}
+              style={{
+                position: 'relative',
+                width: '100%',
+                aspectRatio: '16 / 10',
+                overflow: 'hidden',
+                borderRadius: '10px',
+                background: '#fafafa',
+                cursor: zoom > MIN_ZOOM ? 'grab' : 'default',
+                touchAction: 'none',
+              }}
+            >
               <div
                 style={{
-                  position: 'relative',
-                  width: '100%',
-                  aspectRatio: '16 / 10',
-                  transform: `scale(${zoom})`,
-                  transformOrigin: 'center',
-                  transition: 'transform .2s',
+                  position: 'absolute',
+                  inset: 0,
+                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                  transformOrigin: 'center center',
+                  transition: isInteracting ? 'none' : 'transform .15s',
                 }}
               >
-                {/* TODO: replace this placeholder block with the real exhibition map <img> once the photo is added to src/assets */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: '#fafafa',
-                    border: '1px dashed #d8d0c4',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    padding: '1rem',
-                  }}
-                >
-                  <span style={{ fontSize: 10, color: '#9b9baf' }}>
-                    تصویر واقعی نقشه‌ی نمایشگاه اینجا قرار می‌گیرد
-                  </span>
-                </div>
+                <img
+                  src={mapImage}
+                  alt="نقشه‌ی نمایشگاه"
+                  draggable={false}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }}
+                />
 
                 {pins.map((p) => {
                   const isMatch = matchingPinId === p.id
@@ -123,7 +222,8 @@ function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
                         position: 'absolute',
                         left: `${p.x}%`,
                         top: `${p.y}%`,
-                        transform: 'translate(-50%, -100%)',
+                        transform: `translate(-50%, -100%) scale(${1 / zoom})`,
+                        transformOrigin: 'bottom center',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -136,7 +236,7 @@ function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
                           border: `1px solid ${isMatch ? '#e08b8b' : '#be9c77'}`,
                           borderRadius: 6,
                           padding: '1px 6px',
-                          fontSize: 8,
+                          fontSize: 9,
                           fontWeight: 700,
                           color: '#1b2134',
                           whiteSpace: 'nowrap',

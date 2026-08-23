@@ -39,13 +39,14 @@ import MyTickets from './MyTickets'
 import type { Ticket } from './TicketCard'
 import VisitorDashboard from './VisitorDashboard'
 import MapAccess from './MapAccess'
+import AdminMapPins from './AdminMapPins'
+import { initialMapPins, type MapPin } from './MapPin'
 import AccessInfo from './AccessInfo'
 import Participants, { companiesDirectory, type Company } from './Participants'
 import Panels from './Panels'
 import MyAppointments from './MyAppointments'
 import Notifications, { type VisitorNotif, initialVisitorNotifs } from './Notifications'
 import Promotions from './Promotions'
-import { initialMapPins, type MapPin } from './MapPin'
 import { initialPromotions } from './Promotion'
 import MyAccount from './MyAccount'
 import CompanyProfile, { type CompanyProfileData } from './CompanyProfile'
@@ -91,6 +92,7 @@ type Step =
   | 'exhibitorNotifications'
   | 'adminScans'
   | 'map'
+  | 'adminMapPins'
   | 'access'
   | 'participants'
   | 'panels'
@@ -204,7 +206,7 @@ function App() {
   const [notificationPrefill, setNotificationPrefill] = useState('')
   const [companyProfiles, setCompanyProfiles] = useState<Record<string, CompanyProfileData>>({})
   const [savedCompanyNames, setSavedCompanyNames] = useState<Set<string>>(new Set(['بانک آینده']))
-  const [mapPins] = useState<MapPin[]>(initialMapPins)
+  const [mapPins, setMapPins] = useState<MapPin[]>(initialMapPins)
   const [exhibitorJobSeekerAccess, setExhibitorJobSeekerAccess] = useState<Record<string, boolean>>({})
   const [viewingCompany, setViewingCompany] = useState('')
   const [adminExhibitorAccounts, setAdminExhibitorAccounts] = useState<ExhibitorAccount[]>([])
@@ -463,11 +465,23 @@ function App() {
         onOpenQualityForm={() => setStep('adminQualityForm')}
         onOpenUsers={() => setStep('adminUsers')}
         onOpenExhibitors={() => setStep('adminExhibitors')}
+        onOpenMapPins={() => setStep('adminMapPins')}
         onLogout={() => {
           setAdminDisplayName('')
           setAdminUsername('')
           setStep('select')
         }}
+      />
+    )
+  }
+
+  if (step === 'adminMapPins') {
+    return (
+      <AdminMapPins
+        pins={mapPins}
+        setPins={setMapPins}
+        companyNames={mergedCompanies.map((c) => c.name)}
+        onBack={() => setStep('adminDashboard')}
       />
     )
   }
@@ -897,8 +911,8 @@ function App() {
   }
 
   if (step === 'map') {
-  return <MapAccess pins={mapPins} onOpenProfile={openCompanyProfile} onBack={() => setStep('dashboard')} />
-}
+    return <MapAccess pins={mapPins} onOpenProfile={openCompanyProfile} onBack={() => setStep('dashboard')} />
+  }
 
   if (step === 'access') {
     return <AccessInfo onBack={() => setStep('dashboard')} />

@@ -1,0 +1,354 @@
+import { useRef, useState } from 'react'
+import BackButton from './BackButton'
+import PageTitle from './PageTitle'
+import type { MapPin } from './MapPin'
+import mapImage from './assets/exhibition-map.jpg'
+
+interface AdminMapPinsProps {
+  pins: MapPin[]
+  setPins: React.Dispatch<React.SetStateAction<MapPin[]>>
+  companyNames: string[]
+  onBack: () => void
+}
+
+const MIN_ZOOM = 1
+const MAX_ZOOM = 3.5
+const DRAG_THRESHOLD = 4
+
+type Pan = { x: number; y: number }
+
+function clampPan(pan: Pan, zoom: number, wrapEl: HTMLDivElement | null): Pan {
+  if (!wrapEl) return pan
+  const rect = wrapEl.getBoundingClientRect()
+  const maxX = (rect.width * (zoom - 1)) / 2
+  const maxY = (rect.height * (zoom - 1)) / 2
+  return {
+    x: Math.min(maxX, Math.max(-maxX, pan.x)),
+    y: Math.min(maxY, Math.max(-maxY, pan.y)),
+  }
+}
+
+function touchDistance(t: React.TouchList) {
+  const dx = t[0].clientX - t[1].clientX
+  const dy = t[0].clientY - t[1].clientY
+  return Math.sqrt(dx * dx + dy * dy)
+}
+
+let pinIdCounter = 1000
+function generatePinId() {
+  pinIdCounter += 1
+  return `pin-${pinIdCounter}`
+}
+
+export default function AdminMapPins({ pins, setPins, companyNames, onBack }: AdminMapPinsProps) {
+  const [zoom, setZoom] = useState(MIN_ZOOM)
+  const [pan, setPan] = useState<Pan>({ x: 0, y: 0 })
+  const [isInteracting, setIsInteracting] = useState(false)
+  const [pendingPos, setPendingPos] = useState<{ x: number; y: number } | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState('')
+  const [formError, setFormError] = useState('')
+
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const drag = useRef({ active: false, startX: 0, startY: 0, startPan: { x: 0, y: 0 } as Pan, moved: false })
+  const pinch = useRef({ active: false, startDist: 0, startZoom: MIN_ZOOM })
+
+  const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
+
+  const applyZoom = (nextZoom: number) => {
+    const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom))
+    setZoom(z)
+    setPan((prev) => (z === MIN_ZOOM ? { x: 0, y: 0 } : clampPan(prev, z, wrapRef.current)))
+  }
+
+  const resetView = () => {
+    setZoom(MIN_ZOOM)
+    setPan({ x: 0, y: 0 })
+  }
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (zoom === MIN_ZOOM) return
+    setIsInteracting(true)
+    drag.current = { active: true, startX: e.clientX, startY: e.clientY, startPan: pan, moved: false }
+  }
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!drag.current.active) return
+    const dx = e.clientX - drag.current.startX
+    const dy = e.clientY - drag.current.startY
+    if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) drag.current.moved = true
+    setPan(clampPan({ x: drag.current.startPan.x + dx, y: drag.current.startPan.y + dy }, zoom, wrapRef.current))
+  }
+  const endMouseDrag = () => {
+    drag.current.active = false
+    setIsInteracting(false)
+  }
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      pinch.current = { active: true, startDist: touchDistance(e.touches), startZoom: zoom }
+      drag.current.active = false
+      setIsInteracting(true)
+    } else if (e.touches.length === 1 && zoom > MIN_ZOOM) {
+      drag.current = { active: true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, startPan: pan, moved: false }
+      setIsInteracting(true)
+    }
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (pinch.current.active && e.touches.length === 2) {
+      const dist = touchDistance(e.touches)
+      applyZoom(pinch.current.startZoom * (dist / pinch.current.startDist))
+    } else if (drag.current.active && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - drag.current.startX
+      const dy = e.touches[0].clientY - drag.current.startY
+      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) drag.current.moved = true
+      setPan(clampPan({ x: drag.current.startPan.x + dx, y: drag.current.startPan.y + dy }, zoom, wrapRef.current))
+    }
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) pinch.current.active = false
+    if (e.touches.length === 0) {
+      drag.current.active = false
+      setIsInteracting(false)
+    }
+  }
+
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    applyZoom(zoom - e.deltaY * 0.0015 * zoom)
+  }
+
+  const onMapClick = (e: React.MouseEvent) => {
+    if (drag.current.moved) {
+      drag.current.moved = false
+      return
+    }
+    if (pendingPos) return
+
+    const wrapEl = wrapRef.current
+    if (!wrapEl) return
+    const rect = wrapEl.getBoundingClientRect()
+    const originX = rect.width / 2
+    const originY = rect.height / 2
+    const mx = e.clientX - rect.left
+    const my = e.clientY - rect.top
+    const px = originX + (mx - originX - pan.x) / zoom
+    const py = originY + (my - originY - pan.y) / zoom
+    const xPercent = Math.min(100, Math.max(0, (px / rect.width) * 100))
+    const yPercent = Math.min(100, Math.max(0, (py / rect.height) * 100))
+
+    setPendingPos({ x: xPercent, y: yPercent })
+    setSelectedCompany('')
+    setFormError('')
+  }
+
+  const cancelPending = () => {
+    setPendingPos(null)
+    setFormError('')
+  }
+
+  const savePending = () => {
+    if (!selectedCompany) {
+      setFormError('اول یه شرکت انتخاب کن')
+      return
+    }
+    if (!pendingPos) return
+    setPins((prev) => [...prev, { id: generatePinId(), x: pendingPos.x, y: pendingPos.y, companyName: selectedCompany }])
+    setPendingPos(null)
+    setFormError('')
+  }
+
+  const deletePin = (id: string) => {
+    setPins((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  return (
+    <div
+      className="min-h-screen flex flex-col relative overflow-hidden px-6 py-8"
+      style={{ backgroundColor: '#1b2134', fontFamily: 'var(--font-fa)' }}
+    >
+      <BackButton onClick={onBack} />
+      <div
+        className="absolute rounded-full"
+        style={{ width: '400px', height: '400px', top: '-100px', left: '-100px', background: '#be9c77', opacity: 0.08, filter: 'blur(80px)' }}
+      ></div>
+
+      <div className="relative z-10 mt-6 flex-1 overflow-y-auto pb-4">
+        <PageTitle>مدیریت نقشه و غرفه‌ها</PageTitle>
+
+        <div className="text-[9px] mb-3 text-center leading-relaxed" style={{ color: '#9b9baf' }}>
+          روی نقشه کلیک کن تا پین اضافه بشه، سپس شرکت مربوطه رو انتخاب کن
+        </div>
+
+        <div className="rounded-2xl p-3 mb-4" style={cardStyle}>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[8px]" style={{ color: '#6f6e78' }}>زوم: اسکرول/پینچ · جابه‌جایی: درگ · ریست: دابل‌کلیک</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => applyZoom(zoom + 0.4)}
+                className="w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold"
+                style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
+              >
+                +
+              </button>
+              <button
+                onClick={() => applyZoom(zoom - 0.4)}
+                className="w-7 h-7 rounded-md flex items-center justify-center text-sm font-bold"
+                style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
+              >
+                −
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={wrapRef}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={endMouseDrag}
+            onMouseLeave={endMouseDrag}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onWheel={onWheel}
+            onDoubleClick={resetView}
+            onClick={onMapClick}
+            style={{
+              position: 'relative',
+              width: '100%',
+              aspectRatio: '16 / 10',
+              overflow: 'hidden',
+              borderRadius: '10px',
+              background: '#fafafa',
+              cursor: zoom > MIN_ZOOM ? 'grab' : 'crosshair',
+              touchAction: 'none',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: 'center center',
+                transition: isInteracting ? 'none' : 'transform .15s',
+              }}
+            >
+              <img
+                src={mapImage}
+                alt="نقشه‌ی نمایشگاه"
+                draggable={false}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }}
+              />
+
+              {pins.map((p) => (
+                <div
+                  key={p.id}
+                  style={{
+                    position: 'absolute',
+                    left: `${p.x}%`,
+                    top: `${p.y}%`,
+                    transform: `translate(-50%, -100%) scale(${1 / zoom})`,
+                    transformOrigin: 'bottom center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <span
+                    style={{
+                      background: '#fff',
+                      border: '1px solid #be9c77',
+                      borderRadius: 6,
+                      padding: '1px 6px',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: '#1b2134',
+                      whiteSpace: 'nowrap',
+                      marginBottom: 2,
+                    }}
+                  >
+                    {p.companyName}
+                  </span>
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#be9c77', border: '2px solid #fff' }}></span>
+                </div>
+              ))}
+
+              {pendingPos && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: `${pendingPos.x}%`,
+                    top: `${pendingPos.y}%`,
+                    transform: `translate(-50%, -50%) scale(${1 / zoom})`,
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    background: '#e08b8b',
+                    border: '2px solid #fff',
+                    pointerEvents: 'none',
+                  }}
+                ></div>
+              )}
+            </div>
+          </div>
+
+          {pendingPos && (
+            <div className="flex flex-col gap-2 mt-3">
+              <select
+                value={selectedCompany}
+                onChange={(e) => setSelectedCompany(e.target.value)}
+                className="rounded-lg px-2.5 py-2 text-[10px] outline-none"
+                style={{ color: '#1b2134' }}
+              >
+                <option value="">انتخاب شرکت...</option>
+                {companyNames.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+              {formError && <div className="text-[8.5px]" style={{ color: '#e08b8b' }}>{formError}</div>}
+              <div className="flex gap-2">
+                <button
+                  onClick={cancelPending}
+                  className="flex-1 rounded-lg py-2 text-[9px] font-bold"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: '#c9c7d0', border: 'none', cursor: 'pointer' }}
+                >
+                  لغو
+                </button>
+                <button
+                  onClick={savePending}
+                  className="flex-[2] rounded-lg py-2 text-[9px] font-bold"
+                  style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
+                >
+                  ثبت پین
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl p-3 mb-4" style={cardStyle}>
+          <div className="text-[9px] font-bold mb-2" style={{ color: '#e8cfa8' }}>
+            پین‌های ثبت‌شده ({pins.length})
+          </div>
+          {pins.length === 0 ? (
+            <div className="text-[8.5px] text-center py-3" style={{ color: '#6f6e78' }}>هنوز پینی ثبت نشده</div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {pins.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-lg px-2.5 py-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <span className="text-[9.5px]" style={{ color: '#fff' }}>{p.companyName}</span>
+                  <button
+                    onClick={() => deletePin(p.id)}
+                    className="text-[8px] font-bold rounded-md px-2 py-1"
+                    style={{ background: 'rgba(217,83,79,0.15)', color: '#e08b8b', border: 'none', cursor: 'pointer' }}
+                  >
+                    حذف
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

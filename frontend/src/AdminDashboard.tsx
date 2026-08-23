@@ -51,6 +51,7 @@ const navSections = [
   { key: 'notifications', label: 'اعلان هدفمند' },
   { key: 'scans', label: 'افراد و قرارهای اسکن‌شده' },
   { key: 'qualityForm', label: 'گزارش کیفیت مشارکت' },
+  { key: 'mapPins', label: 'مدیریت نقشه و غرفه‌ها' },
   { key: 'users', label: 'مدیریت کاربران' },
 ]
 
@@ -71,6 +72,7 @@ export default function AdminDashboard({
   onOpenQualityForm,
   onOpenUsers,
   onOpenExhibitors,
+  onOpenMapPins,
   onLogout,
 }: {
   displayName: string
@@ -89,6 +91,7 @@ export default function AdminDashboard({
   onOpenQualityForm: () => void
   onOpenUsers: () => void
   onOpenExhibitors: () => void
+  onOpenMapPins: () => void
   onLogout: () => void
 }) {
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
@@ -308,6 +311,7 @@ export default function AdminDashboard({
                 else if (s.key === 'qualityForm') onOpenQualityForm()
                 else if (s.key === 'users') onOpenUsers()
                 else if (s.key === 'exhibitors') onOpenExhibitors()
+                else if (s.key === 'mapPins') onOpenMapPins()
                 else alert(`صفحه‌ی «${s.label}» در گام بعدی ساخته می‌شود`)
               }}
             >
