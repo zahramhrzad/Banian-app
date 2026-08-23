@@ -1,78 +1,21 @@
 import { useState } from 'react'
 import BackButton from './BackButton'
+import type { MapPin } from './MapPin'
 
-type Hall = {
-  id: string
-  x: number
-  y: number
-  w: number
-  h: number
-  category: 'bank' | 'insurance' | 'capital' | 'infra' | 'you'
-  label: string
+interface MapAccessProps {
+  onBack: () => void
+  pins: MapPin[]
+  onOpenProfile: (company: string) => void
 }
 
-const categoryColor: Record<string, string> = {
-  bank: '#f3e8dc',
-  insurance: '#dbe8f7',
-  capital: '#e3f0e0',
-  infra: '#eee2f2',
-  you: '#be9c77',
-}
-
-const categoryLabel: Record<string, string> = {
-  bank: 'بانک، اعتبار و پرداخت',
-  insurance: 'بیمه و مدیریت ریسک',
-  capital: 'بازار سرمایه و سرمایه‌گذاری',
-  infra: 'زیرساخت، فناوری و نهادهای پشتیبان',
-  you: 'موقعیت شما',
-}
-
-const halls: Hall[] = [
-  { id: '5', x: 45, y: 20, w: 35, h: 26, category: 'bank', label: '۵' },
-  { id: '6', x: 85, y: 20, w: 35, h: 26, category: 'insurance', label: '۶' },
-  { id: '7', x: 125, y: 20, w: 35, h: 26, category: 'capital', label: '۷' },
-  { id: '8-9', x: 165, y: 20, w: 45, h: 26, category: 'infra', label: '۸-۹' },
-  { id: '10', x: 215, y: 20, w: 35, h: 26, category: 'bank', label: '۱۰' },
-  { id: '11-12', x: 245, y: 60, w: 45, h: 26, category: 'insurance', label: '۱۲-۱۱' },
-  { id: '13-14', x: 245, y: 100, w: 45, h: 26, category: 'capital', label: '۱۴-۱۳' },
-  { id: '15', x: 245, y: 140, w: 45, h: 26, category: 'bank', label: '۱۵' },
-  { id: '38', x: 45, y: 150, w: 45, h: 30, category: 'you', label: '۳۸' },
-  { id: '40', x: 95, y: 150, w: 45, h: 30, category: 'bank', label: '۴۰' },
-  { id: '41', x: 145, y: 150, w: 45, h: 30, category: 'insurance', label: '۴۱' },
-  { id: '35', x: 200, y: 150, w: 45, h: 30, category: 'capital', label: '۳۵' },
-]
-
-const boothData: Record<string, string[]> = {
-  '5': ['بانک ملت', 'بانک صادرات'],
-  '6': ['بیمه ایران', 'بیمه دانا'],
-  '7': ['شرکت فناوران داده', 'هلدینگ سرمایه‌گذاری آینده'],
-  '8-9': ['کارگزاری مفید', 'کارگزاری آگاه'],
-  '10': ['شرکت پرداخت الکترونیک'],
-  '11-12': ['صندوق بازنشستگی کشوری', 'بیمه پارسیان'],
-  '13-14': ['فینوتک', 'شاپرک'],
-  '15': ['بانک آینده'],
-  '38': ['شرکت بانیان (شما اینجایید)'],
-  '40': ['بانک پاسارگاد', 'بیمه البرز'],
-  '41': ['گروه مالی سامان'],
-  '35': ['بورس کالای ایران'],
-}
-
-const savedBooths = ['بانک آینده', 'بانک پاسارگاد']
-
-function MapAccess({ onBack }: { onBack: () => void }) {
-  const [selectedHall, setSelectedHall] = useState<Hall | null>(null)
+function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
   const [search, setSearch] = useState('')
   const [zoom, setZoom] = useState(1)
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
 
-  const matchingHallId = (() => {
-    if (!search.trim()) return null
-    const q = search.trim()
-    for (const hallId in boothData) {
-      if (boothData[hallId].some((b) => b.includes(q))) return hallId
-    }
-    return null
-  })()
+  const query = search.trim()
+  const matchingPinId = query ? pins.find((p) => p.companyName.includes(query))?.id || null : null
+  const filteredListPins = query ? pins.filter((p) => p.companyName.includes(query)) : pins
 
   return (
     <div
@@ -139,98 +82,109 @@ function MapAccess({ onBack }: { onBack: () => void }) {
               </button>
             </div>
 
-            <div style={{ overflow: 'hidden' }}>
-              <svg
-                width="100%"
-                height="220"
-                viewBox="0 0 300 200"
-                style={{ transform: `scale(${zoom})`, transformOrigin: 'center', transition: 'transform .2s' }}
+            <div style={{ overflow: 'hidden', borderRadius: '10px' }}>
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  aspectRatio: '16 / 10',
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'center',
+                  transition: 'transform .2s',
+                }}
               >
-                <rect x="6" y="6" width="288" height="175" rx="10" fill="#fafafa" stroke="#ddd" strokeWidth="1" />
-                <circle cx="150" cy="95" r="24" fill="#f3e8dc" stroke="#be9c77" strokeWidth="1" />
-                <text x="150" y="98" fontSize="7" fill="#be9c77" textAnchor="middle">میدان مرکزی</text>
+                {/* TODO: replace this placeholder block with the real exhibition map <img> once the photo is added to src/assets */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: '#fafafa',
+                    border: '1px dashed #d8d0c4',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    padding: '1rem',
+                  }}
+                >
+                  <span style={{ fontSize: 10, color: '#9b9baf' }}>
+                    تصویر واقعی نقشه‌ی نمایشگاه اینجا قرار می‌گیرد
+                  </span>
+                </div>
 
-                {halls.map((h) => {
-                  const isSaved = boothData[h.id]?.some((b) => savedBooths.includes(b))
-                  const isMatch = matchingHallId === h.id
+                {pins.map((p) => {
+                  const isMatch = matchingPinId === p.id
                   return (
-                    <g key={h.id} onClick={() => setSelectedHall(h)} style={{ cursor: 'pointer' }}>
-                      <rect
-                        x={h.x}
-                        y={h.y}
-                        width={h.w}
-                        height={h.h}
-                        rx="3"
-                        fill={categoryColor[h.category]}
-                        stroke={isMatch ? '#e08b8b' : '#be9c77'}
-                        strokeWidth={isMatch ? 2.5 : 1}
-                      />
-                      <text x={h.x + h.w / 2} y={h.y + h.h / 2 + 3} fontSize="8" fill={h.category === 'you' ? '#fff' : '#1b2134'} textAnchor="middle" style={{ pointerEvents: 'none' }}>
-                        {h.label}
-                      </text>
-                      {isSaved && (
-                        <text x={h.x + h.w - 6} y={h.y + 8} fontSize="9" textAnchor="middle" style={{ pointerEvents: 'none' }}>
-                          ★
-                        </text>
-                      )}
-                    </g>
+                    <div
+                      key={p.id}
+                      onClick={() => onOpenProfile(p.companyName)}
+                      style={{
+                        position: 'absolute',
+                        left: `${p.x}%`,
+                        top: `${p.y}%`,
+                        transform: 'translate(-50%, -100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span
+                        style={{
+                          background: '#fff',
+                          border: `1px solid ${isMatch ? '#e08b8b' : '#be9c77'}`,
+                          borderRadius: 6,
+                          padding: '1px 6px',
+                          fontSize: 8,
+                          fontWeight: 700,
+                          color: '#1b2134',
+                          whiteSpace: 'nowrap',
+                          marginBottom: 2,
+                        }}
+                      >
+                        {p.companyName}
+                      </span>
+                      <span
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          background: isMatch ? '#e08b8b' : '#be9c77',
+                          border: '2px solid #fff',
+                        }}
+                      ></span>
+                    </div>
                   )
                 })}
-
-                <text x="150" y="192" fontSize="7" fill="#9b9baf" textAnchor="middle">درب شمالی (ورودی اصلی) ↑</text>
-              </svg>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-2 pt-2" style={{ borderTop: '1px solid #eee' }}>
-              {(['bank', 'insurance', 'capital', 'infra'] as const).map((c) => (
-                <div key={c} className="flex items-center gap-1">
-                  <span style={{ width: 9, height: 9, background: categoryColor[c], border: '1px solid #be9c77', borderRadius: 2, display: 'inline-block' }}></span>
-                  <span style={{ fontSize: 8, color: '#666' }}>{categoryLabel[c]}</span>
-                </div>
-              ))}
-              <div className="flex items-center gap-1">
-                <span style={{ fontSize: 9 }}>★</span>
-                <span style={{ fontSize: 8, color: '#666' }}>در قرارهای من</span>
-              </div>
+            <div className="flex items-center gap-1 mt-2 pt-2" style={{ borderTop: '1px solid #eee' }}>
+              <span style={{ width: 9, height: 9, background: '#be9c77', borderRadius: '50%', display: 'inline-block' }}></span>
+              <span style={{ fontSize: 8, color: '#666' }}>موقعیت غرفه — با کلیک، پروفایل غرفه باز می‌شود</span>
             </div>
           </div>
         ) : (
           <div className="mb-4 flex flex-col gap-2">
-            {halls.map((h) => (
-              <button
-                key={h.id}
-                onClick={() => setSelectedHall(h)}
-                className="w-full bg-white rounded-xl px-3 py-2.5 flex items-center justify-between text-right"
-              >
-                <span className="text-xs font-bold" style={{ color: '#1b2134' }}>سالن {h.label}</span>
-                <span style={{ fontSize: 9, color: '#9b9baf' }}>{categoryLabel[h.category]}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {selectedHall && (
-          <div className="bg-white rounded-2xl p-3.5 mb-4">
-            <div className="text-xs font-bold mb-2" style={{ color: '#1b2134' }}>
-              غرفه‌های سالن {selectedHall.label}
-            </div>
-            <div className="flex flex-col gap-2">
-              {(boothData[selectedHall.id] || []).map((b) => (
-                <div key={b} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: '#f3e8dc' }}>
-                  <span style={{ fontSize: 10.5, color: '#1b2134' }}>
-                    {savedBooths.includes(b) ? '★ ' : ''}
-                    {b}
-                  </span>
-                  <button
-                    onClick={() => alert('مسیر پیشنهادی تا «' + b + '» روی نقشه نمایش داده می‌شود')}
-                    className="text-[9px] font-bold rounded-md px-2 py-1"
-                    style={{ background: '#be9c77', color: '#1b2134' }}
-                  >
-                    مسیریابی
-                  </button>
-                </div>
-              ))}
-            </div>
+            {filteredListPins.length === 0 ? (
+              <div className="text-center py-6" style={{ fontSize: 10.5, color: '#9b9baf' }}>
+                غرفه‌ای با این نام پیدا نشد
+              </div>
+            ) : (
+              filteredListPins.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => onOpenProfile(p.companyName)}
+                  className="w-full bg-white rounded-xl px-3 py-2.5 flex items-center justify-between text-right"
+                >
+                  <span className="text-xs font-bold" style={{ color: '#1b2134' }}>{p.companyName}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="2">
+                    <path d="M15 6l-6 6 6 6" />
+                  </svg>
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>

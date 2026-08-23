@@ -58,7 +58,7 @@ export default function CompanyProfile({
           <div className="text-sm font-bold" style={{ color: '#1b2134' }}>{companyName}</div>
           {company && (
             <div className="text-[9.5px] mt-1" style={{ color: '#9b9baf' }}>
-              سالن {company.hall} · {categoryLabel[company.category]}
+              سالن {company.hall} · {categoryLabel[company.category] || company.category}
             </div>
           )}
         </div>

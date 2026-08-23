@@ -27,6 +27,7 @@ import AdminNotifications, { type AdminNotificationEntry } from './AdminNotifica
 import ExhibitorNotifications, { type ExhibitorNotificationEntry } from './ExhibitorNotifications'
 import AdminScans from './AdminScans'
 import AdminQualityForm from './AdminQualityForm'
+import ExhibitorQualityForm, { type QualityFormAnswers } from './ExhibitorQualityForm'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import ExhibitorNotificationsInbox, { type ExhibitorInboxNotif } from './ExhibitorNotificationsInbox'
 import OtpVerify from './OtpVerify'
@@ -44,12 +45,12 @@ import Panels from './Panels'
 import MyAppointments from './MyAppointments'
 import Notifications, { type VisitorNotif, initialVisitorNotifs } from './Notifications'
 import Promotions from './Promotions'
+import { initialMapPins, type MapPin } from './MapPin'
 import { initialPromotions } from './Promotion'
 import MyAccount from './MyAccount'
 import CompanyProfile, { type CompanyProfileData } from './CompanyProfile'
 import ExhibitorProfile from './ExhibitorProfile'
 import ExhibitorJobSeekers, { type JobSeekerEntry } from './ExhibitorJobSeekers'
-import ExhibitorScanChoice from './ExhibitorScanChoice'
 
 type Step =
   | 'splash'
@@ -65,6 +66,7 @@ type Step =
   | 'myTickets'
   | 'dashboard'
   | 'exhibitorHome'
+  | 'exhibitorQualityForm'
   | 'exhibitorProducts'
   | 'exhibitorPanels'
   | 'exhibitorAgreements'
@@ -100,7 +102,6 @@ type Step =
   | 'exhibitorProfileEdit'
   | 'exhibitorJobSeekers'
   | 'exhibitorNetworkScan'
-  | 'exhibitorScanChoice'
 
 let ticketIdCounter = 214
 
@@ -129,11 +130,6 @@ const emptyRegistrationData: RegistrationData = {
   skills: '',
   preferredCompanies: '',
 }
-
-// لینک عمومی فرم گوگل که غرفه‌داران باید پر کنند
-const EXHIBITOR_FORM_URL = 'https://forms.gle/7yGXCQRpHpebMUba8'
-// لینک داخلی تب پاسخ‌های همان فرم که فقط با اکانت گوگل دارای دسترسی مدیر قابل مشاهده است
-const ADMIN_REPORT_URL = 'https://docs.google.com/forms/d/1HFOtCfAKnCONVk-b9Iibj7P1Kin8uDWXfXMcipHMlnU/edit#responses'
 
 const initialMeetingRequests: MeetingRequest[] = [
   {
@@ -202,11 +198,13 @@ function App() {
   const [exhibitorNotificationHistory, setExhibitorNotificationHistory] = useState<ExhibitorNotificationEntry[]>([])
   const [visitorNotifications, setVisitorNotifications] = useState<VisitorNotif[]>(initialVisitorNotifs)
   const [qualityFormStatus, setQualityFormStatus] = useState<Record<string, boolean>>({})
+  const [qualityFormAnswers, setQualityFormAnswers] = useState<Record<string, QualityFormAnswers>>({})
   const [exhibitorInboxNotifs, setExhibitorInboxNotifs] = useState<Record<string, ExhibitorInboxNotif[]>>({})
   const [lastReminderLabel, setLastReminderLabel] = useState<Record<string, string>>({})
   const [notificationPrefill, setNotificationPrefill] = useState('')
   const [companyProfiles, setCompanyProfiles] = useState<Record<string, CompanyProfileData>>({})
   const [savedCompanyNames, setSavedCompanyNames] = useState<Set<string>>(new Set(['بانک آینده']))
+  const [mapPins] = useState<MapPin[]>(initialMapPins)
   const [exhibitorJobSeekerAccess, setExhibitorJobSeekerAccess] = useState<Record<string, boolean>>({})
   const [viewingCompany, setViewingCompany] = useState('')
   const [adminExhibitorAccounts, setAdminExhibitorAccounts] = useState<ExhibitorAccount[]>([])
@@ -290,8 +288,10 @@ function App() {
     setAdminActivityLog((prev) => [{ admin: adminDisplayName || 'مدیر', action, time: 'همین الان' }, ...prev])
   }
 
-  const markQualityFormDone = () => {
-    setQualityFormStatus((prev) => ({ ...prev, [exhibitorCompany]: true }))
+  const submitQualityForm = (company: string, answers: QualityFormAnswers) => {
+    setQualityFormAnswers((prev) => ({ ...prev, [company]: answers }))
+    setQualityFormStatus((prev) => ({ ...prev, [company]: true }))
+    setStep('exhibitorHome')
   }
 
   const sendQualityFormReminder = (company: string) => {
@@ -510,8 +510,9 @@ function App() {
   if (step === 'adminQualityForm') {
     return (
       <AdminQualityForm
+        companyList={companyList}
         qualityFormStatus={qualityFormStatus}
-        reportUrl={ADMIN_REPORT_URL}
+        qualityFormAnswers={qualityFormAnswers}
         lastReminderLabel={lastReminderLabel}
         onSendReminder={sendQualityFormReminder}
         onSendReminderToAllIncomplete={sendQualityFormReminderToAllIncomplete}
@@ -737,9 +738,8 @@ function App() {
         inviteQuota={inviteQuota}
         sentInvites={sentInvites}
         meetingRequests={meetingRequests}
-        qualityFormUrl={EXHIBITOR_FORM_URL}
         qualityFormCompleted={!!qualityFormStatus[exhibitorCompany]}
-        onMarkQualityFormDone={markQualityFormDone}
+        onOpenQualityForm={() => setStep('exhibitorQualityForm')}
         inboxNotifs={exhibitorInboxNotifs[exhibitorCompany] || []}
         onOpenInbox={() => setStep('exhibitorInbox')}
         onOpenProducts={() => setStep('exhibitorProducts')}
@@ -748,7 +748,8 @@ function App() {
         onOpenInvites={() => setStep('exhibitorInvites')}
         onOpenAppointments={() => setStep('exhibitorAppointments')}
         onOpenReport={() => setStep('exhibitorReport')}
-        onOpenScan={() => setStep('exhibitorScanChoice')}
+        onOpenNetworkScan={() => setStep('exhibitorNetworkScan')}
+        onOpenVisitorScan={() => setStep('exhibitorScan')}
         onOpenNotifications={() => {
           setNotificationPrefill('')
           setStep('exhibitorNotifications')
@@ -757,6 +758,17 @@ function App() {
         onOpenProfileEdit={() => setStep('exhibitorProfileEdit')}
         onOpenJobSeekers={() => setStep('exhibitorJobSeekers')}
         onLogout={handleExhibitorLogout}
+      />
+    )
+  }
+
+  if (step === 'exhibitorQualityForm') {
+    return (
+      <ExhibitorQualityForm
+        companyName={exhibitorCompany}
+        initialAnswers={qualityFormAnswers[exhibitorCompany] || null}
+        onSubmit={(answers) => submitQualityForm(exhibitorCompany, answers)}
+        onBack={() => setStep('exhibitorHome')}
       />
     )
   }
@@ -794,16 +806,6 @@ function App() {
         scanLogs={scanLogs}
         setScanLogs={setScanLogs}
         staffName={name}
-        onBack={() => setStep('exhibitorScanChoice')}
-      />
-    )
-  }
-
-  if (step === 'exhibitorScanChoice') {
-    return (
-      <ExhibitorScanChoice
-        onOpenNetworking={() => setStep('exhibitorNetworkScan')}
-        onOpenVisitorScan={() => setStep('exhibitorScan')}
         onBack={() => setStep('exhibitorHome')}
       />
     )
@@ -846,6 +848,7 @@ function App() {
         companyName={exhibitorCompany}
         promotions={exhibitorPromotions}
         setPromotions={setExhibitorPromotions}
+        onSendNotification={openNotificationsForPanel}
         onBack={() => setStep('exhibitorHome')}
       />
     )
@@ -894,8 +897,8 @@ function App() {
   }
 
   if (step === 'map') {
-    return <MapAccess onBack={() => setStep('dashboard')} />
-  }
+  return <MapAccess pins={mapPins} onOpenProfile={openCompanyProfile} onBack={() => setStep('dashboard')} />
+}
 
   if (step === 'access') {
     return <AccessInfo onBack={() => setStep('dashboard')} />
@@ -1026,7 +1029,7 @@ function App() {
         blockedCompanyName={exhibitorCompany}
         title="قرار ملاقات با غرفه‌های دیگر"
         subtitle="با اسکن QR غرفه‌ی موردنظر، درخواست ملاقات غرفه به غرفه ثبت می‌شود"
-        onBack={() => setStep('exhibitorScanChoice')}
+        onBack={() => setStep('exhibitorHome')}
       />
     )
   }

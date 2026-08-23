@@ -5,7 +5,7 @@ export type Company = {
   id: string
   name: string
   hall: string
-  category: 'bank' | 'capital' | 'insurance' | 'infra'
+  category: string
   popularity: number
 }
 
@@ -190,7 +190,7 @@ function Participants({ companies, onBack, onOpenProfile, savedCompanyNames, onT
                 <div className="flex-1">
                   <div className="text-xs font-bold" style={{ color: '#1b2134' }}>{c.name}</div>
                   <div className="text-[9.5px] mt-0.5" style={{ color: '#9b9baf' }}>
-                    سالن {c.hall} · {categoryLabel[c.category]}
+                    سالن {c.hall} · {categoryLabel[c.category] || c.category}
                   </div>
                 </div>
 

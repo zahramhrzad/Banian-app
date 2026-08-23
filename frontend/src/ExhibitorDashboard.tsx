@@ -28,9 +28,8 @@ interface ExhibitorDashboardProps {
   inviteQuota: number
   sentInvites: SentInvite[]
   meetingRequests: MeetingRequest[]
-  qualityFormUrl: string
   qualityFormCompleted: boolean
-  onMarkQualityFormDone: () => void
+  onOpenQualityForm: () => void
   inboxNotifs: ExhibitorInboxNotif[]
   onOpenInbox: () => void
   onOpenProducts: () => void
@@ -39,7 +38,8 @@ interface ExhibitorDashboardProps {
   onOpenInvites: () => void
   onOpenAppointments: () => void
   onOpenReport: () => void
-  onOpenScan: () => void
+  onOpenNetworkScan: () => void
+  onOpenVisitorScan: () => void
   onOpenNotifications: () => void
   onOpenBoothQr: () => void
   onOpenProfileEdit: () => void
@@ -57,9 +57,8 @@ export default function ExhibitorDashboard({
   inviteQuota,
   sentInvites,
   meetingRequests,
-  qualityFormUrl,
   qualityFormCompleted,
-  onMarkQualityFormDone,
+  onOpenQualityForm,
   inboxNotifs,
   onOpenInbox,
   onOpenProducts,
@@ -68,7 +67,8 @@ export default function ExhibitorDashboard({
   onOpenInvites,
   onOpenAppointments,
   onOpenReport,
-  onOpenScan,
+  onOpenNetworkScan,
+  onOpenVisitorScan,
   onOpenNotifications,
   onOpenBoothQr,
   onOpenProfileEdit,
@@ -195,16 +195,14 @@ export default function ExhibitorDashboard({
             <div className="text-[9px] mb-2.5 leading-relaxed" style={{ color: '#c9c7d0' }}>
               لطفاً جهت تکمیل کیفیت مشارکت، فرم کوتاه زیر را پر کنید
             </div>
-            <div className="flex gap-1.5 mb-2">
-              <a
-                href={qualityFormUrl}
-                target="_blank"
-                rel="noreferrer"
+            <div className="flex gap-1.5">
+              <button
+                onClick={onOpenQualityForm}
                 className="flex-1 rounded-lg py-2 text-center text-[9.5px] font-bold"
-                style={{ background: '#be9c77', color: '#1b2134', textDecoration: 'none' }}
+                style={{ background: '#be9c77', color: '#1b2134', border: 'none', cursor: 'pointer' }}
               >
                 تکمیل فرم
-              </a>
+              </button>
               <button
                 onClick={() => setBannerDismissed(true)}
                 className="rounded-lg px-3 text-[9.5px]"
@@ -213,13 +211,6 @@ export default function ExhibitorDashboard({
                 بعداً
               </button>
             </div>
-            <button
-              onClick={onMarkQualityFormDone}
-              className="text-[8.5px] font-bold underline"
-              style={{ background: 'none', border: 'none', color: '#7d9a86', cursor: 'pointer' }}
-            >
-              فرم را تکمیل کردم
-            </button>
           </div>
         )}
 
@@ -338,14 +329,19 @@ export default function ExhibitorDashboard({
         <div className="text-[8.5px] font-bold mb-1.5 px-0.5" style={{ color: '#e8cfa8' }}>
           ارتباط با بازدیدکنندگان و غرفه‌ها
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-3.5">
-          <button onClick={onOpenScan} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+        <div className="grid grid-cols-2 gap-2 mb-3.5">
+          <button onClick={onOpenNetworkScan} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
+              <path d="M3 21h18M4 21V9l8-5 8 5v12M9 21v-6h6v6" />
             </svg>
-            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>اسکن QR</span>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>قرار ملاقات با غرفه‌های دیگر</span>
+          </button>
+          <button onClick={onOpenVisitorScan} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" />
+            </svg>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>ثبت اسکن بازدیدکننده</span>
           </button>
           <button onClick={onOpenBoothQr} className="rounded-xl py-3 px-1 flex flex-col items-center justify-center gap-1.5" style={tileStyle}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8cfa8" strokeWidth="1.8">
@@ -422,6 +418,14 @@ export default function ExhibitorDashboard({
             <span className="text-[7.5px]" style={{ color: '#8b8a95' }}>
               {toFa(inviteRemaining)} / {toFa(inviteQuota)} باقی‌مانده
             </span>
+          </button>
+          <button onClick={onOpenQualityForm} className="col-span-3 rounded-xl py-2.5 px-3 flex items-center justify-between" style={tileStyle}>
+            <span className="text-[9px] font-bold" style={{ color: '#e8cfa8' }}>فرم کیفیت مشارکت</span>
+            {qualityFormCompleted ? (
+              <span className="text-[7.5px] font-bold" style={{ color: '#7d9a86' }}>تکمیل‌شده · ویرایش پاسخ‌ها</span>
+            ) : (
+              <span className="text-[7.5px]" style={{ color: '#8b8a95' }}>تکمیل‌نشده</span>
+            )}
           </button>
         </div>
 

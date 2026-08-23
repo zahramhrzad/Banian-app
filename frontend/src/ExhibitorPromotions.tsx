@@ -88,11 +88,13 @@ export default function ExhibitorPromotions({
   companyName,
   promotions,
   setPromotions,
+  onSendNotification,
   onBack,
 }: {
   companyName: string
   promotions: ExhibitorPromotion[]
   setPromotions: React.Dispatch<React.SetStateAction<ExhibitorPromotion[]>>
+  onSendNotification: (message: string) => void
   onBack: () => void
 }) {
   const [showForm, setShowForm] = useState(false)
@@ -176,6 +178,13 @@ export default function ExhibitorPromotions({
     setPromotions((prev) => prev.map((p) => (p.id === id ? { ...p, requestStatus: 'draft' } : p)))
   }
 
+  const sendPromotionNotification = (p: ExhibitorPromotion) => {
+    const message = p.desc
+      ? `پروموشن «${p.title}» رو از دست ندید! ${p.desc}`
+      : `پروموشن «${p.title}» در غرفه‌ی ما فعال شد، حتماً سر بزنید`
+    onSendNotification(message)
+  }
+
   const previewUrgency = urgencyText(form)
   const previewGradient = form.backgroundImage
     ? undefined
@@ -193,7 +202,7 @@ export default function ExhibitorPromotions({
       ></div>
 
       <div className="relative z-10 mt-6">
-        <PageTitle>پروموشن و قرعه‌کشی غرفه</PageTitle>
+        <PageTitle>پروموشن غرفه</PageTitle>
 
         {!showForm && (
           <>
@@ -284,9 +293,18 @@ export default function ExhibitorPromotions({
                             ارسال درخواست انتشار
                           </button>
                         ) : (
-                          <span className="text-[8px] font-bold px-2 py-1 rounded-md" style={{ background: '#e3f0e0', color: '#3f6b4d' }}>
-                            تایید و منتشر شده
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[8px] font-bold px-2 py-1 rounded-md" style={{ background: '#e3f0e0', color: '#3f6b4d' }}>
+                              تایید و منتشر شده
+                            </span>
+                            <button
+                              onClick={() => sendPromotionNotification(p)}
+                              className="text-[8px] font-bold px-2 py-1 rounded-md"
+                              style={{ background: 'rgba(190,156,119,0.18)', color: '#8a6d4d', border: 'none', cursor: 'pointer' }}
+                            >
+                              ارسال اعلان
+                            </button>
+                          </div>
                         )}
                         <div className="flex items-center gap-2.5">
                           <button
