@@ -51,6 +51,7 @@ const navSections = [
   { key: 'notifications', label: 'اعلان هدفمند' },
   { key: 'scans', label: 'افراد و قرارهای اسکن‌شده' },
   { key: 'qualityForm', label: 'گزارش کیفیت مشارکت' },
+  { key: 'financialHub', label: 'پیشخوان مالی' },
   { key: 'mapPins', label: 'مدیریت نقشه و غرفه‌ها' },
   { key: 'users', label: 'مدیریت کاربران' },
 ]
@@ -70,6 +71,7 @@ export default function AdminDashboard({
   onOpenNotifications,
   onOpenScans,
   onOpenQualityForm,
+  onOpenFinancialHub,
   onOpenUsers,
   onOpenExhibitors,
   onOpenMapPins,
@@ -89,6 +91,7 @@ export default function AdminDashboard({
   onOpenNotifications: () => void
   onOpenScans: () => void
   onOpenQualityForm: () => void
+  onOpenFinancialHub: () => void
   onOpenUsers: () => void
   onOpenExhibitors: () => void
   onOpenMapPins: () => void
@@ -309,6 +312,7 @@ export default function AdminDashboard({
                 else if (s.key === 'notifications') onOpenNotifications()
                 else if (s.key === 'scans') onOpenScans()
                 else if (s.key === 'qualityForm') onOpenQualityForm()
+                else if (s.key === 'financialHub') onOpenFinancialHub()
                 else if (s.key === 'users') onOpenUsers()
                 else if (s.key === 'exhibitors') onOpenExhibitors()
                 else if (s.key === 'mapPins') onOpenMapPins()

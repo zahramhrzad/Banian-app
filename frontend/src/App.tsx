@@ -27,6 +27,7 @@ import AdminNotifications, { type AdminNotificationEntry } from './AdminNotifica
 import ExhibitorNotifications, { type ExhibitorNotificationEntry } from './ExhibitorNotifications'
 import AdminScans from './AdminScans'
 import AdminQualityForm from './AdminQualityForm'
+import AdminFinancialHub, { defaultFeaturePricing, type FeaturePricing, type WalletTransaction } from './AdminFinancialHub'
 import ExhibitorQualityForm, { type QualityFormAnswers } from './ExhibitorQualityForm'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import ExhibitorNotificationsInbox, { type ExhibitorInboxNotif } from './ExhibitorNotificationsInbox'
@@ -89,6 +90,7 @@ type Step =
   | 'adminExhibitors'
   | 'adminNotifications'
   | 'adminQualityForm'
+  | 'adminFinancialHub'
   | 'exhibitorNotifications'
   | 'adminScans'
   | 'map'
@@ -105,6 +107,8 @@ type Step =
   | 'exhibitorJobSeekers'
   | 'exhibitorNetworkScan'
 
+const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
+
 let ticketIdCounter = 214
 
 function generateTicketId() {
@@ -118,6 +122,51 @@ function generateNotifId() {
   notifIdCounter += 1
   return `qf-${notifIdCounter}`
 }
+
+let walletTxIdCounter = 5000
+
+function generateWalletTxId() {
+  walletTxIdCounter += 1
+  return `wtx-${walletTxIdCounter}`
+}
+
+// داده‌ی نمونه — تا وصل‌شدن به درگاه پرداخت واقعی و ثبت خودکار تراکنش‌ها
+const initialWalletTransactions: WalletTransaction[] = [
+  {
+    id: generateWalletTxId(),
+    company: 'بانک آینده',
+    type: 'charge',
+    amount: 200,
+    note: 'شارژ اولیه (نمونه)',
+    createdAt: Date.now() - 3600000 * 30,
+    createdBy: 'مدیر کل',
+  },
+  {
+    id: generateWalletTxId(),
+    company: 'بانک آینده',
+    type: 'spend',
+    amount: 10,
+    featureKey: 'promotion',
+    createdAt: Date.now() - 3600000 * 20,
+  },
+  {
+    id: generateWalletTxId(),
+    company: 'کارگزاری آگاه',
+    type: 'charge',
+    amount: 150,
+    note: 'شارژ اولیه (نمونه)',
+    createdAt: Date.now() - 3600000 * 18,
+    createdBy: 'مدیر کل',
+  },
+  {
+    id: generateWalletTxId(),
+    company: 'کارگزاری آگاه',
+    type: 'spend',
+    amount: 5,
+    featureKey: 'notification',
+    createdAt: Date.now() - 3600000 * 10,
+  },
+]
 
 const emptyRegistrationData: RegistrationData = {
   fullName: '',
@@ -210,6 +259,8 @@ function App() {
   const [exhibitorJobSeekerAccess, setExhibitorJobSeekerAccess] = useState<Record<string, boolean>>({})
   const [viewingCompany, setViewingCompany] = useState('')
   const [adminExhibitorAccounts, setAdminExhibitorAccounts] = useState<ExhibitorAccount[]>([])
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>(initialWalletTransactions)
+  const [featurePricing, setFeaturePricing] = useState<FeaturePricing[]>(defaultFeaturePricing)
   void visitGoals
 
   // لیست یکتای غرفه‌داران از روی کدهای دمو + غرفه‌دارانی که ادمین اضافه کرده
@@ -288,6 +339,22 @@ function App() {
 
   const logAdminActivity = (action: string) => {
     setAdminActivityLog((prev) => [{ admin: adminDisplayName || 'مدیر', action, time: 'همین الان' }, ...prev])
+  }
+
+  const addManualWalletCharge = (company: string, amount: number, note: string) => {
+    setWalletTransactions((prev) => [
+      {
+        id: generateWalletTxId(),
+        company,
+        type: 'charge',
+        amount,
+        note: note || 'شارژ دستی توسط مدیر',
+        createdAt: Date.now(),
+        createdBy: adminDisplayName || 'مدیر',
+      },
+      ...prev,
+    ])
+    logAdminActivity(`${toFa(amount)} اعتبار به کیف‌پول «${company}» اضافه کرد`)
   }
 
   const submitQualityForm = (company: string, answers: QualityFormAnswers) => {
@@ -463,6 +530,7 @@ function App() {
         onOpenNotifications={() => setStep('adminNotifications')}
         onOpenScans={() => setStep('adminScans')}
         onOpenQualityForm={() => setStep('adminQualityForm')}
+        onOpenFinancialHub={() => setStep('adminFinancialHub')}
         onOpenUsers={() => setStep('adminUsers')}
         onOpenExhibitors={() => setStep('adminExhibitors')}
         onOpenMapPins={() => setStep('adminMapPins')}
@@ -530,6 +598,19 @@ function App() {
         lastReminderLabel={lastReminderLabel}
         onSendReminder={sendQualityFormReminder}
         onSendReminderToAllIncomplete={sendQualityFormReminderToAllIncomplete}
+        onBack={() => setStep('adminDashboard')}
+      />
+    )
+  }
+
+  if (step === 'adminFinancialHub') {
+    return (
+      <AdminFinancialHub
+        companyList={companyList}
+        transactions={walletTransactions}
+        featurePricing={featurePricing}
+        setFeaturePricing={setFeaturePricing}
+        onAddManualCharge={addManualWalletCharge}
         onBack={() => setStep('adminDashboard')}
       />
     )
