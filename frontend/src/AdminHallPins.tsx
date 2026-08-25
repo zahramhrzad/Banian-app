@@ -59,7 +59,8 @@ export default function AdminHallPins({ halls, boothPinsByHall, setBoothPinsByHa
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 })
   const [isInteracting, setIsInteracting] = useState(false)
   const [pendingPos, setPendingPos] = useState<{ x: number; y: number } | null>(null)
-  const [selectedCompany, setSelectedCompany] = useState('')
+  const [companyQuery, setCompanyQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [formError, setFormError] = useState('')
 
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -68,10 +69,15 @@ export default function AdminHallPins({ halls, boothPinsByHall, setBoothPinsByHa
 
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
   const pins = boothPinsByHall[selectedHallId] || []
+  const filteredSuggestions = companyQuery.trim()
+    ? companyNames.filter((n) => n.includes(companyQuery.trim())).slice(0, 8)
+    : companyNames.slice(0, 8)
 
   const changeHall = (hallId: string) => {
     setSelectedHallId(hallId)
     setPendingPos(null)
+    setCompanyQuery('')
+    setShowSuggestions(false)
     setFormError('')
     setZoom(MIN_ZOOM)
     setPan({ x: 0, y: 0 })
@@ -159,24 +165,30 @@ export default function AdminHallPins({ halls, boothPinsByHall, setBoothPinsByHa
     const yPercent = Math.min(100, Math.max(0, (py / rect.height) * 100))
 
     setPendingPos({ x: xPercent, y: yPercent })
-    setSelectedCompany('')
+    setCompanyQuery('')
+    setShowSuggestions(false)
     setFormError('')
   }
 
   const cancelPending = () => {
     setPendingPos(null)
+    setCompanyQuery('')
+    setShowSuggestions(false)
     setFormError('')
   }
 
   const savePending = () => {
-    if (!selectedCompany) {
-      setFormError('اول یه شرکت انتخاب کن')
+    const company = companyQuery.trim()
+    if (!company) {
+      setFormError('اول یه اسم شرکت بنویس یا از لیست انتخاب کن')
       return
     }
     if (!pendingPos) return
-    const newPin: BoothPin = { id: generatePinId(), hallId: selectedHallId, x: pendingPos.x, y: pendingPos.y, companyName: selectedCompany }
+    const newPin: BoothPin = { id: generatePinId(), hallId: selectedHallId, x: pendingPos.x, y: pendingPos.y, companyName: company }
     setBoothPinsByHall((prev) => ({ ...prev, [selectedHallId]: [...(prev[selectedHallId] || []), newPin] }))
     setPendingPos(null)
+    setCompanyQuery('')
+    setShowSuggestions(false)
     setFormError('')
   }
 
@@ -338,17 +350,56 @@ export default function AdminHallPins({ halls, boothPinsByHall, setBoothPinsByHa
 
           {pendingPos && (
             <div className="flex flex-col gap-2 mt-3">
-              <select
-                value={selectedCompany}
-                onChange={(e) => setSelectedCompany(e.target.value)}
-                className="rounded-lg px-2.5 py-2 text-[10px] outline-none"
-                style={{ color: '#1b2134' }}
-              >
-                <option value="">انتخاب شرکت...</option>
-                {companyNames.map((name) => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={companyQuery}
+                  onChange={(e) => {
+                    setCompanyQuery(e.target.value)
+                    setShowSuggestions(true)
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  placeholder="اسم شرکت را بنویس یا از لیست انتخاب کن..."
+                  className="w-full rounded-lg px-2.5 py-2 text-[10px] outline-none"
+                  style={{ color: '#1b2134' }}
+                />
+                {showSuggestions && filteredSuggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      left: 0,
+                      marginTop: 4,
+                      background: '#fff',
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+                      zIndex: 10,
+                      maxHeight: 160,
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {filteredSuggestions.map((name) => (
+                      <div
+                        key={name}
+                        onMouseDown={() => {
+                          setCompanyQuery(name)
+                          setShowSuggestions(false)
+                        }}
+                        className="px-3 py-2 text-[10px]"
+                        style={{ color: '#1b2134', cursor: 'pointer', borderBottom: '1px solid #f3e8dc' }}
+                      >
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="text-[8px] leading-relaxed" style={{ color: '#6f6e78' }}>
+                اگه شرکت توی لیست نبود، همون اسمی که تایپ کردی به‌عنوان اسم غرفه ثبت می‌شه
+              </div>
               {formError && <div className="text-[8.5px]" style={{ color: '#e08b8b' }}>{formError}</div>}
               <div className="flex gap-2">
                 <button
