@@ -27,7 +27,6 @@ import AdminNotifications, { type AdminNotificationEntry } from './AdminNotifica
 import ExhibitorNotifications, { type ExhibitorNotificationEntry } from './ExhibitorNotifications'
 import AdminScans from './AdminScans'
 import AdminQualityForm from './AdminQualityForm'
-import AdminFinancialHub, { defaultFeaturePricing, type FeaturePricing, type WalletTransaction } from './AdminFinancialHub'
 import ExhibitorQualityForm, { type QualityFormAnswers } from './ExhibitorQualityForm'
 import ExhibitorDashboard from './ExhibitorDashboard'
 import ExhibitorNotificationsInbox, { type ExhibitorInboxNotif } from './ExhibitorNotificationsInbox'
@@ -40,8 +39,9 @@ import MyTickets from './MyTickets'
 import type { Ticket } from './TicketCard'
 import VisitorDashboard from './VisitorDashboard'
 import MapAccess from './MapAccess'
-import AdminMapPins from './AdminMapPins'
-import { initialMapPins, type MapPin } from './MapPin'
+import HallMap from './HallMap'
+import AdminHallPins from './AdminHallPins'
+import { halls, initialBoothPinsByHall, type BoothPin } from './Hall'
 import AccessInfo from './AccessInfo'
 import Participants, { companiesDirectory, type Company } from './Participants'
 import Panels from './Panels'
@@ -53,6 +53,7 @@ import MyAccount from './MyAccount'
 import CompanyProfile, { type CompanyProfileData } from './CompanyProfile'
 import ExhibitorProfile from './ExhibitorProfile'
 import ExhibitorJobSeekers, { type JobSeekerEntry } from './ExhibitorJobSeekers'
+import AdminFinancialHub, { type FeaturePricing, type WalletTransaction, defaultFeaturePricing } from './AdminFinancialHub'
 
 type Step =
   | 'splash'
@@ -90,11 +91,11 @@ type Step =
   | 'adminExhibitors'
   | 'adminNotifications'
   | 'adminQualityForm'
-  | 'adminFinancialHub'
   | 'exhibitorNotifications'
   | 'adminScans'
   | 'map'
-  | 'adminMapPins'
+  | 'hallMap'
+  | 'adminHallPins'
   | 'access'
   | 'participants'
   | 'panels'
@@ -106,8 +107,7 @@ type Step =
   | 'exhibitorProfileEdit'
   | 'exhibitorJobSeekers'
   | 'exhibitorNetworkScan'
-
-const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
+  | 'adminFinancialHub'
 
 let ticketIdCounter = 214
 
@@ -122,51 +122,6 @@ function generateNotifId() {
   notifIdCounter += 1
   return `qf-${notifIdCounter}`
 }
-
-let walletTxIdCounter = 5000
-
-function generateWalletTxId() {
-  walletTxIdCounter += 1
-  return `wtx-${walletTxIdCounter}`
-}
-
-// داده‌ی نمونه — تا وصل‌شدن به درگاه پرداخت واقعی و ثبت خودکار تراکنش‌ها
-const initialWalletTransactions: WalletTransaction[] = [
-  {
-    id: generateWalletTxId(),
-    company: 'بانک آینده',
-    type: 'charge',
-    amount: 200,
-    note: 'شارژ اولیه (نمونه)',
-    createdAt: Date.now() - 3600000 * 30,
-    createdBy: 'مدیر کل',
-  },
-  {
-    id: generateWalletTxId(),
-    company: 'بانک آینده',
-    type: 'spend',
-    amount: 10,
-    featureKey: 'promotion',
-    createdAt: Date.now() - 3600000 * 20,
-  },
-  {
-    id: generateWalletTxId(),
-    company: 'کارگزاری آگاه',
-    type: 'charge',
-    amount: 150,
-    note: 'شارژ اولیه (نمونه)',
-    createdAt: Date.now() - 3600000 * 18,
-    createdBy: 'مدیر کل',
-  },
-  {
-    id: generateWalletTxId(),
-    company: 'کارگزاری آگاه',
-    type: 'spend',
-    amount: 5,
-    featureKey: 'notification',
-    createdAt: Date.now() - 3600000 * 10,
-  },
-]
 
 const emptyRegistrationData: RegistrationData = {
   fullName: '',
@@ -255,12 +210,14 @@ function App() {
   const [notificationPrefill, setNotificationPrefill] = useState('')
   const [companyProfiles, setCompanyProfiles] = useState<Record<string, CompanyProfileData>>({})
   const [savedCompanyNames, setSavedCompanyNames] = useState<Set<string>>(new Set(['بانک آینده']))
-  const [mapPins, setMapPins] = useState<MapPin[]>(initialMapPins)
+  const [boothPinsByHall, setBoothPinsByHall] = useState<Record<string, BoothPin[]>>(initialBoothPinsByHall)
+  const [selectedHallId, setSelectedHallId] = useState('')
+  const [highlightPinId, setHighlightPinId] = useState<string | undefined>(undefined)
   const [exhibitorJobSeekerAccess, setExhibitorJobSeekerAccess] = useState<Record<string, boolean>>({})
   const [viewingCompany, setViewingCompany] = useState('')
-  const [adminExhibitorAccounts, setAdminExhibitorAccounts] = useState<ExhibitorAccount[]>([])
-  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>(initialWalletTransactions)
   const [featurePricing, setFeaturePricing] = useState<FeaturePricing[]>(defaultFeaturePricing)
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([])
+  const [adminExhibitorAccounts, setAdminExhibitorAccounts] = useState<ExhibitorAccount[]>([])
   void visitGoals
 
   // لیست یکتای غرفه‌داران از روی کدهای دمو + غرفه‌دارانی که ادمین اضافه کرده
@@ -291,6 +248,12 @@ function App() {
   const openCompanyProfile = (company: string) => {
     setViewingCompany(company)
     setStep('companyProfile')
+  }
+
+  const openHall = (hallId: string, pinId?: string) => {
+    setSelectedHallId(hallId)
+    setHighlightPinId(pinId)
+    setStep('hallMap')
   }
 
   const openPromotionCompany = (company: string) => {
@@ -341,20 +304,19 @@ function App() {
     setAdminActivityLog((prev) => [{ admin: adminDisplayName || 'مدیر', action, time: 'همین الان' }, ...prev])
   }
 
-  const addManualWalletCharge = (company: string, amount: number, note: string) => {
+  const addManualCharge = (company: string, amount: number, note: string) => {
     setWalletTransactions((prev) => [
+      ...prev,
       {
-        id: generateWalletTxId(),
+        id: `wt-${Date.now()}`,
         company,
         type: 'charge',
         amount,
-        note: note || 'شارژ دستی توسط مدیر',
+        note,
         createdAt: Date.now(),
-        createdBy: adminDisplayName || 'مدیر',
+        createdBy: adminDisplayName,
       },
-      ...prev,
     ])
-    logAdminActivity(`${toFa(amount)} اعتبار به کیف‌پول «${company}» اضافه کرد`)
   }
 
   const submitQualityForm = (company: string, answers: QualityFormAnswers) => {
@@ -533,7 +495,7 @@ function App() {
         onOpenFinancialHub={() => setStep('adminFinancialHub')}
         onOpenUsers={() => setStep('adminUsers')}
         onOpenExhibitors={() => setStep('adminExhibitors')}
-        onOpenMapPins={() => setStep('adminMapPins')}
+        onOpenMapPins={() => setStep('adminHallPins')}
         onLogout={() => {
           setAdminDisplayName('')
           setAdminUsername('')
@@ -543,11 +505,25 @@ function App() {
     )
   }
 
-  if (step === 'adminMapPins') {
+  if (step === 'adminFinancialHub') {
     return (
-      <AdminMapPins
-        pins={mapPins}
-        setPins={setMapPins}
+      <AdminFinancialHub
+        companyList={companyList}
+        transactions={walletTransactions}
+        featurePricing={featurePricing}
+        setFeaturePricing={setFeaturePricing}
+        onAddManualCharge={addManualCharge}
+        onBack={() => setStep('adminDashboard')}
+      />
+    )
+  }
+
+  if (step === 'adminHallPins') {
+    return (
+      <AdminHallPins
+        halls={halls}
+        boothPinsByHall={boothPinsByHall}
+        setBoothPinsByHall={setBoothPinsByHall}
         companyNames={mergedCompanies.map((c) => c.name)}
         onBack={() => setStep('adminDashboard')}
       />
@@ -598,19 +574,6 @@ function App() {
         lastReminderLabel={lastReminderLabel}
         onSendReminder={sendQualityFormReminder}
         onSendReminderToAllIncomplete={sendQualityFormReminderToAllIncomplete}
-        onBack={() => setStep('adminDashboard')}
-      />
-    )
-  }
-
-  if (step === 'adminFinancialHub') {
-    return (
-      <AdminFinancialHub
-        companyList={companyList}
-        transactions={walletTransactions}
-        featurePricing={featurePricing}
-        setFeaturePricing={setFeaturePricing}
-        onAddManualCharge={addManualWalletCharge}
         onBack={() => setStep('adminDashboard')}
       />
     )
@@ -992,7 +955,31 @@ function App() {
   }
 
   if (step === 'map') {
-    return <MapAccess pins={mapPins} onOpenProfile={openCompanyProfile} onBack={() => setStep('dashboard')} />
+    return (
+      <MapAccess
+        halls={halls}
+        boothPinsByHall={boothPinsByHall}
+        onOpenHall={openHall}
+        onBack={() => setStep('dashboard')}
+      />
+    )
+  }
+
+  if (step === 'hallMap') {
+    const currentHall = halls.find((h) => h.id === selectedHallId)
+    if (!currentHall) {
+      setStep('map')
+      return null
+    }
+    return (
+      <HallMap
+        hall={currentHall}
+        pins={boothPinsByHall[selectedHallId] || []}
+        highlightPinId={highlightPinId}
+        onOpenProfile={openCompanyProfile}
+        onBack={() => setStep('map')}
+      />
+    )
   }
 
   if (step === 'access') {

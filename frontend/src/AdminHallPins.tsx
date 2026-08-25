@@ -1,12 +1,25 @@
 import { useRef, useState } from 'react'
 import BackButton from './BackButton'
 import PageTitle from './PageTitle'
-import type { MapPin } from './MapPin'
-import mapImage from './assets/exhibition-map.jpg'
+import type { Hall, BoothPin } from './Hall'
+import hall5Img from './assets/hall-5.png'
+import hall67Img from './assets/hall-6-7.png'
+import hall89Img from './assets/hall-8-9.png'
+import hall1011Img from './assets/hall-10-11.png'
+import hall27Img from './assets/hall-27.png'
 
-interface AdminMapPinsProps {
-  pins: MapPin[]
-  setPins: React.Dispatch<React.SetStateAction<MapPin[]>>
+const hallImages: Record<string, string> = {
+  'hall-5': hall5Img,
+  'hall-6-7': hall67Img,
+  'hall-8-9': hall89Img,
+  'hall-10-11': hall1011Img,
+  'hall-27': hall27Img,
+}
+
+interface AdminHallPinsProps {
+  halls: Hall[]
+  boothPinsByHall: Record<string, BoothPin[]>
+  setBoothPinsByHall: React.Dispatch<React.SetStateAction<Record<string, BoothPin[]>>>
   companyNames: string[]
   onBack: () => void
 }
@@ -34,13 +47,14 @@ function touchDistance(t: React.TouchList) {
   return Math.sqrt(dx * dx + dy * dy)
 }
 
-let pinIdCounter = 1000
+let pinIdCounter = 2000
 function generatePinId() {
   pinIdCounter += 1
-  return `pin-${pinIdCounter}`
+  return `bp-${pinIdCounter}`
 }
 
-export default function AdminMapPins({ pins, setPins, companyNames, onBack }: AdminMapPinsProps) {
+export default function AdminHallPins({ halls, boothPinsByHall, setBoothPinsByHall, companyNames, onBack }: AdminHallPinsProps) {
+  const [selectedHallId, setSelectedHallId] = useState(halls[0]?.id || '')
   const [zoom, setZoom] = useState(MIN_ZOOM)
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 })
   const [isInteracting, setIsInteracting] = useState(false)
@@ -53,6 +67,15 @@ export default function AdminMapPins({ pins, setPins, companyNames, onBack }: Ad
   const pinch = useRef({ active: false, startDist: 0, startZoom: MIN_ZOOM })
 
   const cardStyle = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' }
+  const pins = boothPinsByHall[selectedHallId] || []
+
+  const changeHall = (hallId: string) => {
+    setSelectedHallId(hallId)
+    setPendingPos(null)
+    setFormError('')
+    setZoom(MIN_ZOOM)
+    setPan({ x: 0, y: 0 })
+  }
 
   const applyZoom = (nextZoom: number) => {
     const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom))
@@ -151,14 +174,17 @@ export default function AdminMapPins({ pins, setPins, companyNames, onBack }: Ad
       return
     }
     if (!pendingPos) return
-    setPins((prev) => [...prev, { id: generatePinId(), x: pendingPos.x, y: pendingPos.y, companyName: selectedCompany }])
+    const newPin: BoothPin = { id: generatePinId(), hallId: selectedHallId, x: pendingPos.x, y: pendingPos.y, companyName: selectedCompany }
+    setBoothPinsByHall((prev) => ({ ...prev, [selectedHallId]: [...(prev[selectedHallId] || []), newPin] }))
     setPendingPos(null)
     setFormError('')
   }
 
   const deletePin = (id: string) => {
-    setPins((prev) => prev.filter((p) => p.id !== id))
+    setBoothPinsByHall((prev) => ({ ...prev, [selectedHallId]: (prev[selectedHallId] || []).filter((p) => p.id !== id) }))
   }
+
+  const selectedHall = halls.find((h) => h.id === selectedHallId)
 
   return (
     <div
@@ -174,8 +200,27 @@ export default function AdminMapPins({ pins, setPins, companyNames, onBack }: Ad
       <div className="relative z-10 mt-6 flex-1 overflow-y-auto pb-4">
         <PageTitle>مدیریت نقشه و غرفه‌ها</PageTitle>
 
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+          {halls.map((h) => (
+            <button
+              key={h.id}
+              onClick={() => changeHall(h.id)}
+              className="flex-shrink-0 text-[9.5px] font-bold px-3 py-1.5 rounded-lg"
+              style={{
+                background: selectedHallId === h.id ? '#be9c77' : 'rgba(255,255,255,0.06)',
+                color: selectedHallId === h.id ? '#1b2134' : '#9b9baf',
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {h.label}
+            </button>
+          ))}
+        </div>
+
         <div className="text-[9px] mb-3 text-center leading-relaxed" style={{ color: '#9b9baf' }}>
-          روی نقشه کلیک کن تا پین اضافه بشه، سپس شرکت مربوطه رو انتخاب کن
+          روی نقشه‌ی {selectedHall?.label} کلیک کن تا پین اضافه بشه
         </div>
 
         <div className="rounded-2xl p-3 mb-4" style={cardStyle}>
@@ -232,8 +277,8 @@ export default function AdminMapPins({ pins, setPins, companyNames, onBack }: Ad
               }}
             >
               <img
-                src={mapImage}
-                alt="نقشه‌ی نمایشگاه"
+                src={hallImages[selectedHallId]}
+                alt={selectedHall?.label || ''}
                 draggable={false}
                 style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }}
               />
@@ -327,7 +372,7 @@ export default function AdminMapPins({ pins, setPins, companyNames, onBack }: Ad
 
         <div className="rounded-2xl p-3 mb-4" style={cardStyle}>
           <div className="text-[9px] font-bold mb-2" style={{ color: '#e8cfa8' }}>
-            پین‌های ثبت‌شده ({pins.length})
+            غرفه‌های ثبت‌شده در {selectedHall?.label} ({pins.length})
           </div>
           {pins.length === 0 ? (
             <div className="text-[8.5px] text-center py-3" style={{ color: '#6f6e78' }}>هنوز پینی ثبت نشده</div>

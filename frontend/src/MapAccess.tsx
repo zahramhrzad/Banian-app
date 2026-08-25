@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react'
 import BackButton from './BackButton'
-import type { MapPin } from './MapPin'
+import type { Hall, BoothPin } from './Hall'
 import mapImage from './assets/exhibition-map.jpg'
 
 interface MapAccessProps {
   onBack: () => void
-  pins: MapPin[]
-  onOpenProfile: (company: string) => void
+  halls: Hall[]
+  boothPinsByHall: Record<string, BoothPin[]>
+  onOpenHall: (hallId: string, highlightPinId?: string) => void
 }
 
 const MIN_ZOOM = 1
@@ -31,7 +32,7 @@ function touchDistance(t: React.TouchList) {
   return Math.sqrt(dx * dx + dy * dy)
 }
 
-function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
+function MapAccess({ onBack, halls, boothPinsByHall, onOpenHall }: MapAccessProps) {
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
   const [zoom, setZoom] = useState(MIN_ZOOM)
@@ -43,8 +44,15 @@ function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
   const pinch = useRef({ active: false, startDist: 0, startZoom: MIN_ZOOM })
 
   const query = search.trim()
-  const matchingPinId = query ? pins.find((p) => p.companyName.includes(query))?.id || null : null
-  const filteredListPins = query ? pins.filter((p) => p.companyName.includes(query)) : pins
+
+  // جست‌وجوی سراسری: تمام پین‌های همه‌ی سالن‌ها رو می‌گرده
+  const searchResults = query
+    ? Object.entries(boothPinsByHall).flatMap(([hallId, pins]) =>
+        pins
+          .filter((p) => p.companyName.includes(query))
+          .map((p) => ({ pin: p, hall: halls.find((h) => h.id === hallId) }))
+      )
+    : []
 
   const applyZoom = (nextZoom: number) => {
     const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom))
@@ -122,18 +130,40 @@ function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
           نقشه‌ها
         </div>
 
-        <div className="bg-white rounded-xl flex items-center gap-2 px-3 py-2.5 mb-3">
+        <div className="bg-white rounded-xl flex items-center gap-2 px-3 py-2.5 mb-2">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9b9baf" strokeWidth="2">
             <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />
           </svg>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="جست‌وجوی نام شرکت..."
+            placeholder="جست‌وجوی نام شرکت در تمام سالن‌ها..."
             className="flex-1 text-xs outline-none border-none"
             style={{ color: '#1b2134' }}
           />
         </div>
+
+        {query && (
+          <div className="bg-white rounded-xl mb-3 overflow-hidden">
+            {searchResults.length === 0 ? (
+              <div className="text-center py-3 text-[10px]" style={{ color: '#9b9baf' }}>
+                نتیجه‌ای پیدا نشد
+              </div>
+            ) : (
+              searchResults.map(({ pin, hall }) => (
+                <button
+                  key={pin.id}
+                  onClick={() => onOpenHall(pin.hallId, pin.id)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-right"
+                  style={{ borderBottom: '1px solid #f3e8dc' }}
+                >
+                  <span className="text-xs font-bold" style={{ color: '#1b2134' }}>{pin.companyName}</span>
+                  <span className="text-[9px]" style={{ color: '#9b9baf' }}>{hall?.label || ''}</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
 
         <div className="flex gap-2 mb-3">
           <button
@@ -155,7 +185,7 @@ function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
         {viewMode === 'map' ? (
           <div className="bg-white rounded-2xl p-3 mb-4">
             <div className="flex justify-between items-center mb-2">
-              <span style={{ fontSize: 8, color: '#9b9baf' }}>برای زوم: اسکرول یا پینچ · برای جابه‌جایی: درگ</span>
+              <span style={{ fontSize: 8, color: '#9b9baf' }}>زوم: اسکرول/پینچ · جابه‌جایی: درگ</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => applyZoom(zoom + 0.4)}
@@ -212,79 +242,62 @@ function MapAccess({ onBack, pins, onOpenProfile }: MapAccessProps) {
                   style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' }}
                 />
 
-                {pins.map((p) => {
-                  const isMatch = matchingPinId === p.id
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => onOpenProfile(p.companyName)}
+                {halls.map((h) => (
+                  <div
+                    key={h.id}
+                    onClick={() => onOpenHall(h.id)}
+                    style={{
+                      position: 'absolute',
+                      left: `${h.x}%`,
+                      top: `${h.y}%`,
+                      transform: `translate(-50%, -100%) scale(${1 / zoom})`,
+                      transformOrigin: 'bottom center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span
                       style={{
-                        position: 'absolute',
-                        left: `${p.x}%`,
-                        top: `${p.y}%`,
-                        transform: `translate(-50%, -100%) scale(${1 / zoom})`,
-                        transformOrigin: 'bottom center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        cursor: 'pointer',
+                        background: '#fff',
+                        border: '1px solid #be9c77',
+                        borderRadius: 6,
+                        padding: '1px 6px',
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: '#1b2134',
+                        whiteSpace: 'nowrap',
+                        marginBottom: 2,
                       }}
                     >
-                      <span
-                        style={{
-                          background: '#fff',
-                          border: `1px solid ${isMatch ? '#e08b8b' : '#be9c77'}`,
-                          borderRadius: 6,
-                          padding: '1px 6px',
-                          fontSize: 9,
-                          fontWeight: 700,
-                          color: '#1b2134',
-                          whiteSpace: 'nowrap',
-                          marginBottom: 2,
-                        }}
-                      >
-                        {p.companyName}
-                      </span>
-                      <span
-                        style={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: '50%',
-                          background: isMatch ? '#e08b8b' : '#be9c77',
-                          border: '2px solid #fff',
-                        }}
-                      ></span>
-                    </div>
-                  )
-                })}
+                      {h.label}
+                    </span>
+                    <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#be9c77', border: '2px solid #fff' }}></span>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="flex items-center gap-1 mt-2 pt-2" style={{ borderTop: '1px solid #eee' }}>
               <span style={{ width: 9, height: 9, background: '#be9c77', borderRadius: '50%', display: 'inline-block' }}></span>
-              <span style={{ fontSize: 8, color: '#666' }}>موقعیت غرفه — با کلیک، پروفایل غرفه باز می‌شود</span>
+              <span style={{ fontSize: 8, color: '#666' }}>هر پین یک سالن است — با کلیک، وارد نقشه‌ی همان سالن می‌شوید</span>
             </div>
           </div>
         ) : (
           <div className="mb-4 flex flex-col gap-2">
-            {filteredListPins.length === 0 ? (
-              <div className="text-center py-6" style={{ fontSize: 10.5, color: '#9b9baf' }}>
-                غرفه‌ای با این نام پیدا نشد
-              </div>
-            ) : (
-              filteredListPins.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => onOpenProfile(p.companyName)}
-                  className="w-full bg-white rounded-xl px-3 py-2.5 flex items-center justify-between text-right"
-                >
-                  <span className="text-xs font-bold" style={{ color: '#1b2134' }}>{p.companyName}</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#be9c77" strokeWidth="2">
-                    <path d="M15 6l-6 6 6 6" />
-                  </svg>
-                </button>
-              ))
-            )}
+            {halls.map((h) => (
+              <button
+                key={h.id}
+                onClick={() => onOpenHall(h.id)}
+                className="w-full bg-white rounded-xl px-3 py-2.5 flex items-center justify-between text-right"
+              >
+                <span className="text-xs font-bold" style={{ color: '#1b2134' }}>{h.label}</span>
+                <span style={{ fontSize: 9, color: '#9b9baf' }}>
+                  {(boothPinsByHall[h.id] || []).length} غرفه ثبت‌شده
+                </span>
+              </button>
+            ))}
           </div>
         )}
       </div>
