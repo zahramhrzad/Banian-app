@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Splash from './Splash'
 import UserTypeSelect from './UserTypeSelect'
 import VisitPriority from './VisitPriority'
@@ -8,7 +8,7 @@ import ExhibitorLogin, { demoExhibitorCodes } from './ExhibitorLogin'
 import ExhibitorProducts, { type Product, type CategoryId } from './ExhibitorProducts'
 import ExhibitorPanels, { type PanelSession } from './ExhibitorPanels'
 import ExhibitorAgreements, { type Agreement } from './ExhibitorAgreements'
-import ExhibitorPromotions, { type ExhibitorPromotion } from './ExhibitorPromotions'
+import ExhibitorPromotions, { type ExhibitorPromotion, computeStatus as computePromotionStatus } from './ExhibitorPromotions'
 import ExhibitorInvites, { type SentInvite } from './ExhibitorInvites'
 import ExhibitorAppointments, { type MeetingRequest } from './ExhibitorAppointments'
 import ExhibitorReport from './ExhibitorReport'
@@ -44,11 +44,11 @@ import AdminHallPins from './AdminHallPins'
 import { halls, initialBoothPinsByHall, type BoothPin } from './Hall'
 import AccessInfo from './AccessInfo'
 import Participants, { companiesDirectory, type Company } from './Participants'
-import Panels from './Panels'
+import Panels, { findProgramSession, getSessionStartDate } from './Panels'
 import MyAppointments from './MyAppointments'
 import Notifications, { type VisitorNotif, initialVisitorNotifs } from './Notifications'
 import Promotions from './Promotions'
-import { initialPromotions } from './Promotion'
+import type { Promotion } from './Promotion'
 import MyAccount from './MyAccount'
 import CompanyProfile, { type CompanyProfileData } from './CompanyProfile'
 import ExhibitorProfile from './ExhibitorProfile'
@@ -188,6 +188,7 @@ function App() {
   const [pendingTickets, setPendingTickets] = useState<TicketPurchaseResult[]>([])
   const [pendingPrice, setPendingPrice] = useState(0)
   const [savedPromotionIds, setSavedPromotionIds] = useState<Set<string>>(new Set())
+  const [savedSessionIds, setSavedSessionIds] = useState<Set<string>>(new Set())
   const [exhibitorCode, setExhibitorCode] = useState('')
   const [exhibitorCompany, setExhibitorCompany] = useState('')
   const [products, setProducts] = useState<Product[]>([])
@@ -244,6 +245,29 @@ function App() {
       return next
     })
   }
+
+  const toggleSaveSession = (id: string) => {
+    setSavedSessionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // پروموشن‌هایی که واقعاً باید به بازدیدکننده نشان داده شوند: فقط آن‌هایی که غرفه‌دار ثبت کرده،
+  // مدیریت تایید کرده (requestStatus === 'approved') و همین الان طبق تاریخ شروع/پایان واقعی‌شان «فعال» هستند.
+  // قبلاً این بخش هیچ‌وقت به exhibitorPromotions وصل نبود و همیشه فقط initialPromotions (۳ مورد ثابت نمایشی) را نشان می‌داد.
+  const visitorPromotions: Promotion[] = exhibitorPromotions
+    .filter((p) => p.requestStatus === 'approved' && computePromotionStatus(p) === 'active')
+    .map((p) => ({
+      id: p.id,
+      company: p.companyName,
+      title: p.title,
+      desc: p.desc,
+      category: p.category,
+      backgroundImage: p.backgroundImage || undefined,
+    }))
 
   const openCompanyProfile = (company: string) => {
     setViewingCompany(company)
@@ -444,6 +468,144 @@ function App() {
       ...prev,
     ])
   }
+
+  // ================== موتور واقعیِ زمان‌بندی و تحویل اعلان‌ها ==================
+  // جایگزین حالت قبلی که در آن «ارسال فوری»، «زمان‌بندی‌شده» و «یادآوری نشست» فقط ظاهرشان اعلان بود ولی
+  // هیچ‌چیز واقعاً به گیرنده نمی‌رسید. چون برنامه هنوز سرور واقعی ندارد (سرور/درگاه پرداخت طبق تصمیم قبلی
+  // بعداً اضافه می‌شود)، این موتور کاملاً سمت کلاینت کار می‌کند: تا وقتی همین تب باز است، در لحظه‌ی واقعی
+  // مقرر (بر اساس ساعت واقعی سیستم) پیام‌ها را به اینباکس گیرنده‌ی واقعی تحویل می‌دهد.
+  const toFaDigits = (n: number) => String(Math.max(0, Math.round(n))).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
+
+  const liveRef = useRef({
+    companyList,
+    mergedCompanies,
+    savedSessionIds,
+    exhibitorPromotions,
+    adminNotificationHistory,
+    exhibitorNotificationHistory,
+  })
+  useEffect(() => {
+    liveRef.current = {
+      companyList,
+      mergedCompanies,
+      savedSessionIds,
+      exhibitorPromotions,
+      adminNotificationHistory,
+      exhibitorNotificationHistory,
+    }
+  })
+
+  const deliverAdminNotification = (entry: AdminNotificationEntry) => {
+    if (entry.recipientType === 'visitor') {
+      setVisitorNotifications((prev) => [
+        { id: `an-${entry.id}`, type: 'announce', title: 'اطلاعیه از مدیریت نمایشگاه', body: entry.message, time: 'همین الان', read: false },
+        ...prev,
+      ])
+      return
+    }
+    const { companyList: liveCompanyList, mergedCompanies: liveMergedCompanies } = liveRef.current
+    const targets = liveCompanyList.filter((company) => {
+      if (entry.categoryIds.length === 0) return true
+      const c = liveMergedCompanies.find((mc) => mc.name === company)
+      return !!c && entry.categoryIds.includes(c.category as CategoryId)
+    })
+    setExhibitorInboxNotifs((prev) => {
+      const next = { ...prev }
+      targets.forEach((company) => {
+        next[company] = [
+          { id: `${generateNotifId()}-${entry.id}`, title: 'اطلاعیه از مدیریت نمایشگاه', body: entry.message, time: 'همین الان', read: false },
+          ...(next[company] || []),
+        ]
+      })
+      return next
+    })
+  }
+
+  const deliverExhibitorNotification = (entry: ExhibitorNotificationEntry) => {
+    setVisitorNotifications((prev) => [
+      { id: `en-${entry.id}`, type: 'announce', title: 'اطلاعیه از یک غرفه', body: entry.message, time: 'همین الان', read: false },
+      ...prev,
+    ])
+  }
+
+  useEffect(() => {
+    const isDue = (h: { status: string; scheduledAt: string; delivered?: boolean }, now: number) =>
+      !h.delivered && (h.status === 'sent' || (h.status === 'scheduled' && !!h.scheduledAt && new Date(h.scheduledAt).getTime() <= now))
+
+    const tick = () => {
+      const now = Date.now()
+
+      // نکته‌ی فنی مهم: تحویل واقعی (deliverAdminNotification/deliverExhibitorNotification) عمداً بیرون از
+      // تابع setState فراخوانی می‌شود، نه داخل آن. چون React (به‌خصوص در StrictMode) ممکن است تابع updater
+      // یک setState را برای تست خالص‌بودن، دوبار صدا بزند؛ اگر «تحویل واقعی» داخل همان updater بود، با هر
+      // تیک، پیام دوبار به اینباکس گیرنده می‌رسید. برای همین ابتدا فهرست موارد سررسیده از روی liveRef (فقط
+      // خواندن) محاسبه می‌شود، تحویل یک‌بار انجام می‌شود، و بعد setState فقط delivered/status را (به‌صورت
+      // خالص و idempotent) به‌روز می‌کند.
+      const dueAdmin = liveRef.current.adminNotificationHistory.filter((h) => isDue(h, now))
+      if (dueAdmin.length > 0) {
+        dueAdmin.forEach(deliverAdminNotification)
+        const dueIds = new Set(dueAdmin.map((h) => h.id))
+        setAdminNotificationHistory((prev) =>
+          prev.map((h) => (dueIds.has(h.id) ? { ...h, delivered: true, status: 'sent' as const } : h))
+        )
+      }
+
+      const dueExhibitor = liveRef.current.exhibitorNotificationHistory.filter((h) => isDue(h, now))
+      if (dueExhibitor.length > 0) {
+        dueExhibitor.forEach(deliverExhibitorNotification)
+        const dueIds = new Set(dueExhibitor.map((h) => h.id))
+        setExhibitorNotificationHistory((prev) =>
+          prev.map((h) => (dueIds.has(h.id) ? { ...h, delivered: true, status: 'sent' as const } : h))
+        )
+      }
+
+      // یادآوری واقعی نشست‌ها: هر نشستی که بازدیدکننده ذخیره کرده و تا ۳۰ دقیقه‌ی دیگر (یا تا ۱۰ دقیقه بعد از شروع) برگزار می‌شود
+      liveRef.current.savedSessionIds.forEach((sessionId) => {
+        const found = findProgramSession(sessionId)
+        if (!found) return
+        const start = getSessionStartDate(found.session, found.dayId)
+        if (!start) return
+        const diffMs = start.getTime() - now
+        if (diffMs > 30 * 60 * 1000 || diffMs < -10 * 60 * 1000) return
+        const notifId = `reminder-${sessionId}`
+        setVisitorNotifications((prev) => {
+          if (prev.some((n) => n.id === notifId)) return prev
+          const body =
+            diffMs > 0
+              ? `نشست «${found.session.topic}» تا ${toFaDigits(diffMs / 60000)} دقیقه‌ی دیگر شروع می‌شود.`
+              : `نشست «${found.session.topic}» همین حالا شروع شده است.`
+          return [{ id: notifId, type: 'reminder', title: 'یادآوری نشست', body, time: 'همین الان', read: false }, ...prev]
+        })
+      })
+
+      // پروموشن‌هایی که همین الان «فعال» شده‌اند (چه از قبل زمان‌بندی شده باشند، چه بلافاصله بعد از تایید مدیر)
+      liveRef.current.exhibitorPromotions.forEach((p) => {
+        if (p.requestStatus !== 'approved') return
+        if (computePromotionStatus(p) !== 'active') return
+        const notifId = `promo-live-${p.id}`
+        setVisitorNotifications((prev) => {
+          if (prev.some((n) => n.id === notifId)) return prev
+          return [
+            {
+              id: notifId,
+              type: 'announce',
+              title: 'پروموشن جدید فعال شد',
+              body: p.desc
+                ? `پروموشن «${p.title}» از غرفه‌ی «${p.companyName}» فعال شد: ${p.desc}`
+                : `پروموشن «${p.title}» از غرفه‌ی «${p.companyName}» فعال شد.`,
+              time: 'همین الان',
+              read: false,
+            },
+            ...prev,
+          ]
+        })
+      })
+    }
+
+    tick()
+    const interval = setInterval(tick, 4000)
+    return () => clearInterval(interval)
+  }, [])
 
   if (step === 'splash') return <Splash onNext={() => setStep('select')} />
 
@@ -775,7 +937,7 @@ function App() {
         onOpenNotifications={() => setStep('notifications')}
         onOpenBoothScan={() => setStep('visitorScan')}
         onOpenMyAccount={() => setStep('myAccount')}
-        promotions={initialPromotions}
+        promotions={visitorPromotions}
         savedPromotionIds={savedPromotionIds}
         onTogglePromotionSave={togglePromotionSave}
         onOpenPromotionCompany={openPromotionCompany}
@@ -1003,6 +1165,8 @@ function App() {
       <Panels
         onBack={() => setStep('dashboard')}
         onNavigateToMap={() => setStep('map')}
+        savedIds={savedSessionIds}
+        onToggleSave={toggleSaveSession}
       />
     )
   }
@@ -1023,7 +1187,7 @@ function App() {
   if (step === 'promotions') {
     return (
       <Promotions
-        promotions={initialPromotions}
+        promotions={visitorPromotions}
         savedIds={savedPromotionIds}
         onToggleSave={togglePromotionSave}
         onOpenCompany={openPromotionCompany}

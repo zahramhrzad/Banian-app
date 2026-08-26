@@ -19,6 +19,9 @@ const typeColor: Record<NotifType, string> = {
   request: '#8a95c9',
 }
 
+// توجه: اعلان «یادآوری نشست» دیگر اینجا هاردکد نیست. حالا با ذخیره‌کردن یک نشست در
+// صفحه‌ی «پنل‌ها»، موتور واقعی یادآوری در App.tsx یک اعلان reminder واقعی (با id شروع‌شونده
+// با reminder-) دقیقاً ۳۰ دقیقه مانده به شروع همان نشست، به همین آرایه اضافه می‌کند.
 export const initialVisitorNotifs: VisitorNotif[] = [
   {
     id: 'n1',
@@ -26,14 +29,6 @@ export const initialVisitorNotifs: VisitorNotif[] = [
     title: 'درخواست شما تایید شد',
     body: 'غرفه‌ی «بانک آینده» درخواست دیدار شما را تایید کرد.',
     time: '۲ ساعت پیش',
-    read: false,
-  },
-  {
-    id: 'n2',
-    type: 'reminder',
-    title: 'یادآوری نشست',
-    body: 'نشست «ارتباط صنعت با دانشگاه» تا ۳۰ دقیقه‌ی دیگر شروع می‌شود.',
-    time: '۴۵ دقیقه پیش',
     read: false,
   },
   {

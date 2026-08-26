@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import BackButton from './BackButton';
+import { DAYS } from './ExhibitorPanels';
 
-interface Session {
+export interface Session {
   id: string;
   time: string;
   hall: string;
@@ -15,7 +16,7 @@ interface DayData {
   sessions: Session[];
 }
 
-const PROGRAM: Record<number, DayData> = {
+export const PROGRAM: Record<number, DayData> = {
   1: {
     label: 'روز اول',
     date: '۱۲ آذر ۱۴۰۵',
@@ -54,29 +55,47 @@ const PROGRAM: Record<number, DayData> = {
   },
 };
 
+// ساعت نشست (مثلاً «۹:۰۰ - ۹:۴۵») را با تاریخ واقعی روز نمایشگاه ترکیب می‌کند تا یک Date واقعی به‌دست بیاید.
+// این Date واقعی همان چیزی است که موتور یادآوری در App.tsx برای زمان‌بندی واقعی استفاده می‌کند.
+const toEnglishDigits = (str: string) => str.replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+
+export function getSessionStartDate(session: Session, dayId: number): Date | null {
+  const day = DAYS.find((d) => d.id === dayId);
+  if (!day) return null;
+  const match = toEnglishDigits(session.time).match(/(\d{1,2})[:.](\d{2})/);
+  const start = new Date(day.realDate);
+  if (match) {
+    start.setHours(Number(match[1]), Number(match[2]), 0, 0);
+  } else {
+    start.setHours(9, 0, 0, 0);
+  }
+  return start;
+}
+
+export function findProgramSession(id: string): { session: Session; dayId: number } | undefined {
+  for (const [dayNum, data] of Object.entries(PROGRAM)) {
+    const found = data.sessions.find((s) => s.id === id);
+    if (found) return { session: found, dayId: Number(dayNum) };
+  }
+  return undefined;
+}
+
 interface PanelsProps {
   onBack: () => void;
   onNavigateToMap?: (hallName: string) => void;
+  savedIds: Set<string>;
+  onToggleSave: (id: string) => void;
 }
 
-export default function Panels({ onBack, onNavigateToMap }: PanelsProps) {
+export default function Panels({ onBack, onNavigateToMap, savedIds, onToggleSave }: PanelsProps) {
   const [activeDay, setActiveDay] = useState(1);
   const [search, setSearch] = useState('');
   const [showSavedOnly, setShowSavedOnly] = useState(false);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
-  const toggleSave = (id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-        // TODO فاز ۳: اینجا باید درخواست ذخیره به Supabase (جدول appointments یا یک جدول جدید saved_sessions) ارسال شود + نوتیف
-      }
-      return next;
-    });
-  };
+  // ذخیره‌کردن نشست فقط در state برنامه است (بدون Supabase، چون هنوز سرور وصل نشده)؛
+  // ولی برخلاف قبل، این ذخیره واقعاً به موتور یادآوری در App.tsx متصل است و باعث ارسال
+  // یک اعلان واقعی به اینباکس همین بازدیدکننده، ۳۰ دقیقه مانده به شروع نشست، می‌شود.
+  const toggleSave = onToggleSave;
 
   const dayData = PROGRAM[activeDay];
 

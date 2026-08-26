@@ -16,6 +16,9 @@ export interface AdminNotificationEntry {
   scheduledAt: string
   createdAt: number
   audienceEstimate: number
+  // موتور واقعی ارسال در App.tsx این را true می‌کند وقتی پیام واقعاً به اینباکس گیرنده‌ها تحویل داده شد
+  // (برای «فوری» بلافاصله، برای «زمان‌بندی‌شده» دقیقاً وقتی scheduledAt فرا برسد).
+  delivered?: boolean
 }
 
 const toFa = (n: number) => String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
